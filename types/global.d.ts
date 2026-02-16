@@ -8,7 +8,7 @@ declare global {
     name: string;
     pin: string;
     createdAt: Date;
-    updatedAt: Date;
+    updatedAt?: Date;
   }
 
   /** A single work shift (clock in only) */
@@ -35,6 +35,12 @@ declare global {
     user: User | null;
     token: string | null;
   }
+
+  interface UsersState {
+    users: User[];
+    setUsers: (users: User[]) => void;
+  }
+
 }
 
 export {};

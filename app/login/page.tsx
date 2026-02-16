@@ -53,10 +53,10 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         <div className="rounded-xl border border-zinc-700 bg-zinc-800 p-8 shadow-xl">
           <h1 className="text-center text-2xl font-semibold text-white">
-            Asian Le Staff Admin
+            Asian LE Staff Admin
           </h1>
           <p className="mt-1 text-center text-sm text-zinc-400">
-            Sign in to continue
+            Admin sign in
           </p>
 
           <form onSubmit={handleSubmit} className="mt-8 space-y-4">
@@ -81,7 +81,7 @@ export default function LoginPage() {
                 required
                 autoComplete="email"
                 className="mt-1 w-full rounded-lg border border-zinc-600 bg-zinc-700 px-4 py-2.5 text-white placeholder-zinc-400 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
-                placeholder="you@example.com"
+                placeholder="admin@example.com"
               />
             </div>
 
@@ -100,6 +100,7 @@ export default function LoginPage() {
                 required
                 autoComplete="current-password"
                 className="mt-1 w-full rounded-lg border border-zinc-600 bg-zinc-700 px-4 py-2.5 text-white placeholder-zinc-400 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
+                placeholder="••••••••"
               />
             </div>
 
