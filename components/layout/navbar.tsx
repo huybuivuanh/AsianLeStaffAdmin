@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { signOut } from "firebase/auth";
+import { auth } from "@/lib/firebaseConfig";
 
 const navItems = [
   { href: "/", label: "Dashboard" },
@@ -22,25 +24,27 @@ export function Navbar() {
           Asian Le Staff
         </Link>
         <div className="flex items-center gap-1">
-          {navItems.map((item) => {
-            const isActive =
-              item.href === "/"
-                ? pathname === "/"
-                : pathname.startsWith(item.href);
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`rounded-lg px-4 py-2.5 text-sm font-medium transition-colors ${
-                  isActive
-                    ? "bg-zinc-700 text-white"
-                    : "text-zinc-400 hover:bg-zinc-800 hover:text-white"
-                }`}
-              >
-                {item.label}
-              </Link>
-            );
-          })}
+          {navItems.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`rounded-lg px-4 py-2.5 text-sm font-medium transition-colors ${
+                (item.href === "/"
+                  ? pathname === "/"
+                  : pathname.startsWith(item.href))
+                  ? "bg-zinc-700 text-white"
+                  : "bg-zinc-800/60 text-zinc-400 hover:bg-zinc-700 hover:text-white"
+              }`}
+            >
+              {item.label}
+            </Link>
+          ))}
+          <button
+            onClick={() => signOut(auth)}
+            className="ml-4 rounded-lg bg-red-900/50 px-4 py-2.5 text-sm font-medium text-red-400 transition-colors hover:bg-red-800/70 hover:text-red-300"
+          >
+            Log out
+          </button>
         </div>
       </div>
     </nav>
