@@ -11,36 +11,18 @@ declare global {
     updatedAt?: Date;
   }
 
-  /** A single work shift (clock in only) */
+  /** Schedule or completed shift (unified) */
   interface Shift {
     id: string;
     userId: string;
     userName: string;
-    clockInTime: Date;
+    shiftStarts: Date;
+    shiftEnds: Date;
     date: string;
+    clockInTime?: Date | null;
+    actualHours?: number;
+    status?: "scheduled" | "completed" | "cancelled";
   }
-
-  /** Legacy / alias */
-  interface ClockInRecord {
-    id: string;
-    userId: string;
-    userName: string;
-    clockInTime: Date;
-    clockOutTime?: Date;
-    status: "clocked-in" | "clocked-out";
-  }
-
-  interface AuthState {
-    isAuthenticated: boolean;
-    user: User | null;
-    token: string | null;
-  }
-
-  interface UsersState {
-    users: User[];
-    setUsers: (users: User[]) => void;
-  }
-
 }
 
 export {};
