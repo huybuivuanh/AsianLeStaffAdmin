@@ -51,7 +51,7 @@ export default function StaffHoursPage() {
     viewDate.getFullYear(),
     viewDate.getMonth(),
   );
-  const weekStart = (monthStart.getDay() + 6) % 7;
+  const weekStart = monthStart.getDay(); // 0=Sun, 1=Mon, ...
   const padding = Array(weekStart).fill(null);
 
   function prevMonth() {
@@ -121,7 +121,7 @@ export default function StaffHoursPage() {
             </button>
           </div>
           <div className="mt-4 grid grid-cols-7 gap-1 text-center text-xs">
-            {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
+            {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
               <div key={d} className="py-1 font-medium text-zinc-500">
                 {d}
               </div>
