@@ -5,6 +5,7 @@ import { useUsers } from "@/hooks/use-users";
 import { useShifts } from "@/hooks/use-shifts";
 import { AddShiftModal } from "@/components/shifts/add-shift-modal";
 import { DeleteShiftModal } from "@/components/shifts/delete-shift-modal";
+import { EditShiftModal } from "@/components/shifts/edit-shift-modal";
 
 function getHoursWorked(shift: Shift): number {
   if (shift.actualHours !== undefined) return shift.actualHours;
@@ -42,11 +43,17 @@ export default function StaffHoursPage() {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [addShiftModalOpen, setAddShiftModalOpen] = useState(false);
   const [deleteShiftModalOpen, setDeleteShiftModalOpen] = useState(false);
+  const [editShiftModalOpen, setEditShiftModalOpen] = useState(false);
+
+  const effectiveUserId =
+    selectedUserId && users.some((u) => u.id === selectedUserId)
+      ? selectedUserId
+      : users[0]?.id ?? "";
 
   const filteredShifts = useMemo(() => {
-    if (!selectedUserId) return shifts;
-    return shifts.filter((s) => s.userId === selectedUserId);
-  }, [shifts, selectedUserId]);
+    if (!effectiveUserId) return [];
+    return shifts.filter((s) => s.userId === effectiveUserId);
+  }, [shifts, effectiveUserId]);
 
   const shiftsByDate = useMemo(() => {
     const map: Record<string, Shift[]> = {};
@@ -66,16 +73,6 @@ export default function StaffHoursPage() {
   );
 
   const monthStart = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
-  const monthEnd = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 0);
-  const periodShifts = filteredShifts.filter((s) => {
-    return s.date >= toDateKey(monthStart) && s.date <= toDateKey(monthEnd);
-  });
-  const periodHours = periodShifts.reduce(
-    (sum, s) => sum + getHoursWorked(s),
-    0,
-  );
-  const daysWorked = new Set(periodShifts.map((s) => s.date)).size;
-
   const calendarDays = getDaysInMonth(
     viewDate.getFullYear(),
     viewDate.getMonth(),
@@ -109,6 +106,13 @@ export default function StaffHoursPage() {
           </button>
           <button
             type="button"
+            onClick={() => setEditShiftModalOpen(true)}
+            className="rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50"
+          >
+            Edit shifts
+          </button>
+          <button
+            type="button"
             onClick={() => setDeleteShiftModalOpen(true)}
             className="rounded-lg border border-red-300 bg-red-50 px-4 py-2.5 text-sm font-medium text-red-700 transition-colors hover:bg-red-100"
           >
@@ -125,11 +129,13 @@ export default function StaffHoursPage() {
                 Staff
               </label>
               <select
-                value={selectedUserId}
+                value={effectiveUserId}
                 onChange={(e) => setSelectedUserId(e.target.value)}
                 className="mt-1 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
               >
-                <option value="">All staff</option>
+                {users.length === 0 ? (
+                  <option value="" disabled>No staff</option>
+                ) : null}
                 {users.map((u) => (
                   <option key={u.id} value={u.id}>
                     {u.name}
@@ -264,30 +270,6 @@ export default function StaffHoursPage() {
               </p>
             )}
           </div>
-
-          <div className="mt-4 rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
-            <h3 className="font-medium text-zinc-900">Summary</h3>
-            <p className="mt-2 text-sm text-zinc-600">
-              {viewDate.toLocaleString("default", {
-                month: "long",
-                year: "numeric",
-              })}
-            </p>
-            <div className="mt-2 flex gap-4">
-              <div>
-                <span className="text-2xl font-semibold text-zinc-900">
-                  {formatHours(periodHours)}
-                </span>
-                <span className="ml-1 text-sm text-zinc-500">total hours</span>
-              </div>
-              <div>
-                <span className="text-2xl font-semibold text-zinc-900">
-                  {daysWorked}
-                </span>
-                <span className="ml-1 text-sm text-zinc-500">days worked</span>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
 
@@ -295,6 +277,12 @@ export default function StaffHoursPage() {
         isOpen={addShiftModalOpen}
         users={users}
         onClose={() => setAddShiftModalOpen(false)}
+        onSuccess={() => {}}
+      />
+      <EditShiftModal
+        isOpen={editShiftModalOpen}
+        users={users}
+        onClose={() => setEditShiftModalOpen(false)}
         onSuccess={() => {}}
       />
       <DeleteShiftModal

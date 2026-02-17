@@ -122,6 +122,59 @@ export async function deleteShifts(
   return deleted;
 }
 
+export async function updateShiftsInRange(
+  startDate: string,
+  endDate: string,
+  shiftStarts: Date,
+  shiftEnds: Date,
+  userId?: string,
+  selectedDays?: number[],
+  actualHours?: number
+): Promise<number> {
+  if (!clientDb) throw new Error("Database not configured");
+  const shiftsRef = collection(clientDb, "shifts");
+  let q = query(
+    shiftsRef,
+    where("date", ">=", startDate),
+    where("date", "<=", endDate)
+  );
+  if (userId) {
+    q = query(q, where("userId", "==", userId));
+  }
+  const snapshot = await getDocs(q);
+  let docsToUpdate = snapshot.docs;
+  if (selectedDays && selectedDays.length > 0) {
+    docsToUpdate = docsToUpdate.filter((d) => {
+      const dateStr = d.data().date as string;
+      return selectedDays.includes(getDayOfWeek(dateStr));
+    });
+  }
+  let updated = 0;
+  for (const d of docsToUpdate) {
+    const dateStr = d.data().date as string;
+    const [y, m, day] = dateStr.split("-").map(Number);
+    const baseDate = new Date(y, m - 1, day);
+    const startHours = shiftStarts.getHours();
+    const startMins = shiftStarts.getMinutes();
+    const endHours = shiftEnds.getHours();
+    const endMins = shiftEnds.getMinutes();
+    const newStarts = new Date(baseDate);
+    newStarts.setHours(startHours, startMins, 0, 0);
+    const newEnds = new Date(baseDate);
+    newEnds.setHours(endHours, endMins, 0, 0);
+    const shiftRef = doc(clientDb, "shifts", d.id);
+    const updates: Record<string, unknown> = {
+      shiftStarts: toFirestoreTimestamp(newStarts),
+      shiftEnds: toFirestoreTimestamp(newEnds),
+      updatedAt: serverTimestamp(),
+    };
+    if (actualHours !== undefined) updates.actualHours = actualHours;
+    await updateDoc(shiftRef, updates);
+    updated++;
+  }
+  return updated;
+}
+
 export async function updateShift(
   shiftId: string,
   data: {

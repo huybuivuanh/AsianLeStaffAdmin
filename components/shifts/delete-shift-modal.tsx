@@ -44,6 +44,7 @@ export function DeleteShiftModal({
 
   useEffect(() => {
     if (isOpen) {
+      setUserId(users[0]?.id ?? "");
       const today = toDateKey(new Date());
       setDate(today);
       setStartDate(today);
@@ -51,7 +52,7 @@ export function DeleteShiftModal({
       setSelectedDays([0, 1, 2, 3, 4, 5, 6]);
       setError("");
     }
-  }, [isOpen]);
+  }, [isOpen, users]);
 
   useEffect(() => {
     function handleEscape(e: KeyboardEvent) {
@@ -88,10 +89,15 @@ export function DeleteShiftModal({
       const daysFilter = mode === "range" && selectedDays.length > 0
         ? selectedDays
         : undefined;
+      if (!userId) {
+        setError("Please select a staff member");
+        setDeleting(false);
+        return;
+      }
       const count = await deleteShifts(
         start,
         end,
-        userId || undefined,
+        userId,
         daysFilter
       );
       onSuccess();
@@ -129,23 +135,23 @@ export function DeleteShiftModal({
 
           <div>
             <label className="block text-sm font-medium text-zinc-700">
-              Staff (optional)
+              Staff
             </label>
             <select
               value={userId}
               onChange={(e) => setUserId(e.target.value)}
+              required
               className="mt-1 w-full rounded-lg border border-zinc-300 px-4 py-2.5 text-zinc-900 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
             >
-              <option value="">All staff</option>
+              {users.length === 0 ? (
+                <option value="" disabled>No staff</option>
+              ) : null}
               {users.map((u) => (
                 <option key={u.id} value={u.id}>
                   {u.name}
                 </option>
               ))}
             </select>
-            <p className="mt-1 text-xs text-zinc-500">
-              Leave as &quot;All staff&quot; to delete for everyone
-            </p>
           </div>
 
           <div className="flex gap-4">
