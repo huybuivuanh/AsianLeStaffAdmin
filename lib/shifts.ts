@@ -3,7 +3,6 @@ import {
   collection,
   addDoc,
   updateDoc,
-  deleteDoc,
   serverTimestamp,
   writeBatch,
   query,
@@ -17,6 +16,14 @@ function toFirestoreTimestamp(date: Date): Timestamp {
   return Timestamp.fromDate(date);
 }
 
+export function getHoursWorked(shift: Shift): number {
+  if (shift.actualHours !== undefined) return shift.actualHours;
+  if (!shift.clockInTime) return 0;
+  const start = shift.clockInTime.getTime();
+  const end = shift.shiftEnds.getTime();
+  return Math.max(0, (end - start) / (1000 * 60 * 60));
+}
+
 export async function createShiftsBatch(
   shifts: Array<{
     userId: string;
@@ -24,7 +31,7 @@ export async function createShiftsBatch(
     shiftStarts: Date;
     shiftEnds: Date;
     date: string;
-  }>
+  }>,
 ): Promise<void> {
   if (!clientDb) throw new Error("Database not configured");
   const firestoreBatch = writeBatch(clientDb);
@@ -47,7 +54,7 @@ export async function createShift(
   userName: string,
   shiftStarts: Date,
   shiftEnds: Date,
-  date: string
+  date: string,
 ): Promise<string> {
   if (!clientDb) throw new Error("Database not configured");
   const ref = await addDoc(collection(clientDb, "shifts"), {
@@ -70,7 +77,7 @@ export async function recordClockIn(shiftId: string): Promise<void> {
 
 export async function updateShiftActualHours(
   shiftId: string,
-  actualHours: number
+  actualHours: number,
 ): Promise<void> {
   if (!clientDb) throw new Error("Database not configured");
   const shiftRef = doc(clientDb, "shifts", shiftId);
@@ -87,14 +94,14 @@ export async function deleteShifts(
   startDate: string,
   endDate: string,
   userId?: string,
-  selectedDays?: number[]
+  selectedDays?: number[],
 ): Promise<number> {
   if (!clientDb) throw new Error("Database not configured");
   const shiftsRef = collection(clientDb, "shifts");
   let q = query(
     shiftsRef,
     where("date", ">=", startDate),
-    where("date", "<=", endDate)
+    where("date", "<=", endDate),
   );
   if (userId) {
     q = query(q, where("userId", "==", userId));
@@ -129,14 +136,14 @@ export async function updateShiftsInRange(
   shiftEnds: Date,
   userId?: string,
   selectedDays?: number[],
-  actualHours?: number
+  actualHours?: number,
 ): Promise<number> {
   if (!clientDb) throw new Error("Database not configured");
   const shiftsRef = collection(clientDb, "shifts");
   let q = query(
     shiftsRef,
     where("date", ">=", startDate),
-    where("date", "<=", endDate)
+    where("date", "<=", endDate),
   );
   if (userId) {
     q = query(q, where("userId", "==", userId));
@@ -182,12 +189,13 @@ export async function updateShift(
     shiftEnds?: Date;
     actualHours?: number;
     status?: "scheduled" | "completed" | "cancelled";
-  }
+  },
 ): Promise<void> {
   if (!clientDb) throw new Error("Database not configured");
   const shiftRef = doc(clientDb, "shifts", shiftId);
   const updates: Record<string, unknown> = {};
-  if (data.shiftStarts) updates.shiftStarts = toFirestoreTimestamp(data.shiftStarts);
+  if (data.shiftStarts)
+    updates.shiftStarts = toFirestoreTimestamp(data.shiftStarts);
   if (data.shiftEnds) updates.shiftEnds = toFirestoreTimestamp(data.shiftEnds);
   if (data.actualHours !== undefined) updates.actualHours = data.actualHours;
   if (data.status) updates.status = data.status;

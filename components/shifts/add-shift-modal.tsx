@@ -2,6 +2,7 @@
 
 import { useState, useEffect, type SubmitEvent } from "react";
 import { createShift, createShiftsBatch } from "@/lib/shifts";
+import { toDateKey } from "@/lib/utils";
 
 const WEEKDAYS = [
   { value: 1, label: "Mon" },
@@ -12,13 +13,6 @@ const WEEKDAYS = [
   { value: 6, label: "Sat" },
   { value: 0, label: "Sun" },
 ] as const;
-
-function toDateKey(d: Date): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-}
 
 function parseLocalDate(dateStr: string): Date {
   const [y, m, day] = dateStr.split("-").map(Number);

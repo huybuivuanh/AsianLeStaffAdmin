@@ -2,6 +2,7 @@
 
 import { useState, useEffect, type FormEvent } from "react";
 import { updateShiftsInRange } from "@/lib/shifts";
+import { toDateKey } from "@/lib/utils";
 
 const WEEKDAYS = [
   { value: 0, label: "Sun" },
@@ -12,13 +13,6 @@ const WEEKDAYS = [
   { value: 5, label: "Fri" },
   { value: 6, label: "Sat" },
 ] as const;
-
-function toDateKey(d: Date): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-}
 
 interface EditShiftModalProps {
   isOpen: boolean;

@@ -6,34 +6,8 @@ import { useShifts } from "@/hooks/use-shifts";
 import { AddShiftModal } from "@/components/shifts/add-shift-modal";
 import { DeleteShiftModal } from "@/components/shifts/delete-shift-modal";
 import { EditShiftModal } from "@/components/shifts/edit-shift-modal";
-
-function getHoursWorked(shift: Shift): number {
-  if (shift.actualHours !== undefined) return shift.actualHours;
-  if (!shift.clockInTime) return 0;
-  const start = shift.clockInTime.getTime();
-  const end = shift.shiftEnds.getTime();
-  return Math.max(0, (end - start) / (1000 * 60 * 60));
-}
-
-function formatHours(hours: number): string {
-  const h = Math.floor(hours);
-  const m = Math.round((hours - h) * 60);
-  return m > 0 ? `${h}h ${m}m` : `${h}h`;
-}
-
-function getDaysInMonth(year: number, month: number): Date[] {
-  const first = new Date(year, month, 1);
-  const last = new Date(year, month + 1, 0);
-  const days: Date[] = [];
-  for (let d = new Date(first); d <= last; d.setDate(d.getDate() + 1)) {
-    days.push(new Date(d));
-  }
-  return days;
-}
-
-function toDateKey(d: Date): string {
-  return d.toISOString().slice(0, 10);
-}
+import { toDateKey, getDaysInMonth, formatHours } from "@/lib/utils";
+import { getHoursWorked } from "@/lib/shifts";
 
 export default function StaffHoursPage() {
   const users = useUsers();
@@ -48,7 +22,7 @@ export default function StaffHoursPage() {
   const effectiveUserId =
     selectedUserId && users.some((u) => u.id === selectedUserId)
       ? selectedUserId
-      : users[0]?.id ?? "";
+      : (users[0]?.id ?? "");
 
   const filteredShifts = useMemo(() => {
     if (!effectiveUserId) return [];
@@ -134,7 +108,9 @@ export default function StaffHoursPage() {
                 className="mt-1 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
               >
                 {users.length === 0 ? (
-                  <option value="" disabled>No staff</option>
+                  <option value="" disabled>
+                    No staff
+                  </option>
                 ) : null}
                 {users.map((u) => (
                   <option key={u.id} value={u.id}>
@@ -188,7 +164,7 @@ export default function StaffHoursPage() {
                     onClick={() => setSelectedDate(key)}
                     className={`rounded py-2 text-zinc-900 hover:bg-zinc-100 ${
                       isSelected
-                        ? "bg-zinc-900 text-white hover:bg-zinc-800"
+                        ? "bg-blue-300 text-white hover:bg-grey-900"
                         : ""
                     } ${hasShifts ? "font-medium" : ""}`}
                   >
@@ -196,7 +172,7 @@ export default function StaffHoursPage() {
                     {hasShifts && (
                       <span
                         className={`ml-0.5 inline-block h-1 w-1 rounded-full ${
-                          isSelected ? "bg-white" : "bg-zinc-500"
+                          isSelected ? "bg-zinc-900" : "bg-zinc-500"
                         }`}
                       />
                     )}
