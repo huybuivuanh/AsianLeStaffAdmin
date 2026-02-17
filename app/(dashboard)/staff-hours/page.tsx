@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { useUsers } from "@/hooks/use-users";
 import { useShifts } from "@/hooks/use-shifts";
+import { AddShiftModal } from "@/components/shifts/add-shift-modal";
 
 function getHoursWorked(shift: Shift): number {
   if (shift.actualHours !== undefined) return shift.actualHours;
@@ -38,6 +39,7 @@ export default function StaffHoursPage() {
   const [selectedUserId, setSelectedUserId] = useState<string>("");
   const [viewDate, setViewDate] = useState(() => new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [addShiftModalOpen, setAddShiftModalOpen] = useState(false);
 
   const filteredShifts = useMemo(() => {
     if (!selectedUserId) return shifts;
@@ -53,10 +55,12 @@ export default function StaffHoursPage() {
     return map;
   }, [filteredShifts]);
 
-  const selectedDayShifts = selectedDate ? shiftsByDate[selectedDate] ?? [] : [];
+  const selectedDayShifts = selectedDate
+    ? (shiftsByDate[selectedDate] ?? [])
+    : [];
   const selectedDayHours = selectedDayShifts.reduce(
     (sum, s) => sum + getHoursWorked(s),
-    0
+    0,
   );
 
   const monthStart = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
@@ -66,11 +70,14 @@ export default function StaffHoursPage() {
   });
   const periodHours = periodShifts.reduce(
     (sum, s) => sum + getHoursWorked(s),
-    0
+    0,
   );
   const daysWorked = new Set(periodShifts.map((s) => s.date)).size;
 
-  const calendarDays = getDaysInMonth(viewDate.getFullYear(), viewDate.getMonth());
+  const calendarDays = getDaysInMonth(
+    viewDate.getFullYear(),
+    viewDate.getMonth(),
+  );
   const weekStart = (monthStart.getDay() + 6) % 7;
   const padding = Array(weekStart).fill(null);
 
@@ -83,8 +90,21 @@ export default function StaffHoursPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold text-zinc-900">Staff Hours</h1>
-      <p className="mt-2 text-zinc-600">View shifts and hours by staff member.</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-zinc-900">Staff Hours</h1>
+          <p className="mt-2 text-zinc-600">
+            View shifts and hours by staff member.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setAddShiftModalOpen(true)}
+          className="rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-zinc-800"
+        >
+          Add shift
+        </button>
+      </div>
 
       <div className="mt-6 flex flex-col gap-6 lg:flex-row">
         <div className="flex-1">
@@ -150,7 +170,9 @@ export default function StaffHoursPage() {
                     type="button"
                     onClick={() => setSelectedDate(key)}
                     className={`rounded py-2 text-zinc-900 hover:bg-zinc-100 ${
-                      isSelected ? "bg-zinc-900 text-white hover:bg-zinc-800" : ""
+                      isSelected
+                        ? "bg-zinc-900 text-white hover:bg-zinc-800"
+                        : ""
                     } ${hasShifts ? "font-medium" : ""}`}
                   >
                     {d.getDate()}
@@ -174,7 +196,7 @@ export default function StaffHoursPage() {
               {selectedDate
                 ? new Date(selectedDate + "T12:00:00").toLocaleDateString(
                     undefined,
-                    { weekday: "long", month: "short", day: "numeric" }
+                    { weekday: "long", month: "short", day: "numeric" },
                   )
                 : "Select a day"}
             </h3>
@@ -221,7 +243,9 @@ export default function StaffHoursPage() {
                   </div>
                 </div>
               ) : (
-                <p className="mt-3 text-sm text-zinc-500">No shifts this day.</p>
+                <p className="mt-3 text-sm text-zinc-500">
+                  No shifts this day.
+                </p>
               )
             ) : (
               <p className="mt-3 text-sm text-zinc-500">
@@ -255,6 +279,13 @@ export default function StaffHoursPage() {
           </div>
         </div>
       </div>
+
+      <AddShiftModal
+        isOpen={addShiftModalOpen}
+        users={users}
+        onClose={() => setAddShiftModalOpen(false)}
+        onSuccess={() => {}}
+      />
     </div>
   );
 }

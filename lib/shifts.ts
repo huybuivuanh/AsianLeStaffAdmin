@@ -4,12 +4,38 @@ import {
   addDoc,
   updateDoc,
   serverTimestamp,
+  writeBatch,
   Timestamp,
 } from "firebase/firestore";
 import { clientDb } from "./firebaseConfig";
 
 function toFirestoreTimestamp(date: Date): Timestamp {
   return Timestamp.fromDate(date);
+}
+
+export async function createShiftsBatch(
+  shifts: Array<{
+    userId: string;
+    userName: string;
+    shiftStarts: Date;
+    shiftEnds: Date;
+    date: string;
+  }>
+): Promise<void> {
+  if (!clientDb) throw new Error("Database not configured");
+  const firestoreBatch = writeBatch(clientDb);
+  const shiftsRef = collection(clientDb, "shifts");
+  for (const s of shifts) {
+    const ref = doc(shiftsRef);
+    firestoreBatch.set(ref, {
+      userId: s.userId,
+      userName: s.userName,
+      shiftStarts: toFirestoreTimestamp(s.shiftStarts),
+      shiftEnds: toFirestoreTimestamp(s.shiftEnds),
+      date: s.date,
+    });
+  }
+  await firestoreBatch.commit();
 }
 
 export async function createShift(
