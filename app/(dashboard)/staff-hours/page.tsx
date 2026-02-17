@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import { useUsers } from "@/hooks/use-users";
 import { useShifts } from "@/hooks/use-shifts";
 import { AddShiftModal } from "@/components/shifts/add-shift-modal";
+import { DeleteShiftModal } from "@/components/shifts/delete-shift-modal";
 
 function getHoursWorked(shift: Shift): number {
   if (shift.actualHours !== undefined) return shift.actualHours;
@@ -40,6 +41,7 @@ export default function StaffHoursPage() {
   const [viewDate, setViewDate] = useState(() => new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [addShiftModalOpen, setAddShiftModalOpen] = useState(false);
+  const [deleteShiftModalOpen, setDeleteShiftModalOpen] = useState(false);
 
   const filteredShifts = useMemo(() => {
     if (!selectedUserId) return shifts;
@@ -97,13 +99,22 @@ export default function StaffHoursPage() {
             View shifts and hours by staff member.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => setAddShiftModalOpen(true)}
-          className="rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-zinc-800"
-        >
-          Add shift
-        </button>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => setAddShiftModalOpen(true)}
+            className="rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-zinc-800"
+          >
+            Add shift
+          </button>
+          <button
+            type="button"
+            onClick={() => setDeleteShiftModalOpen(true)}
+            className="rounded-lg border border-red-300 bg-red-50 px-4 py-2.5 text-sm font-medium text-red-700 transition-colors hover:bg-red-100"
+          >
+            Delete shifts
+          </button>
+        </div>
       </div>
 
       <div className="mt-6 flex flex-col gap-6 lg:flex-row">
@@ -284,6 +295,12 @@ export default function StaffHoursPage() {
         isOpen={addShiftModalOpen}
         users={users}
         onClose={() => setAddShiftModalOpen(false)}
+        onSuccess={() => {}}
+      />
+      <DeleteShiftModal
+        isOpen={deleteShiftModalOpen}
+        users={users}
+        onClose={() => setDeleteShiftModalOpen(false)}
         onSuccess={() => {}}
       />
     </div>

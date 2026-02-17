@@ -208,7 +208,7 @@ export function AddShiftModal({
                 onChange={() => setMode("recurring")}
                 className="text-zinc-900"
               />
-              <span className="text-sm text-zinc-700">Recurring (Mon–Fri)</span>
+              <span className="text-sm text-zinc-700">Recurring</span>
             </label>
           </div>
 

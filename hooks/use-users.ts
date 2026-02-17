@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { collection, onSnapshot } from "firebase/firestore";
 import { clientDb } from "@/lib/firebaseConfig";
 import { useUsersStore } from "@/stores/users-store";
+import { sortByAlphabet } from "@/lib/utils";
 
 export function useUsers() {
   const { users, setUsers } = useUsersStore();
@@ -26,11 +27,11 @@ export function useUsers() {
             updatedAt: data.updatedAt?.toDate?.(),
           };
         });
-        setUsers(usersList);
+        setUsers(sortByAlphabet(usersList, (u) => u.name));
       },
       (error) => {
         console.error("Error fetching users:", error);
-      }
+      },
     );
 
     return () => unsubscribe();

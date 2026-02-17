@@ -1,14 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useUsers } from "@/hooks/use-users";
 import { UserModal } from "@/components/users/user-modal";
 import { deleteUser } from "@/lib/users";
-import { sortByAlphabet } from "@/lib/utils";
 
 export default function UsersPage() {
   const users = useUsers();
-  const sortedUsers = useMemo(() => sortByAlphabet(users, (u) => u.name), [users]);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<"add" | "edit">("add");
   const [editingUser, setEditingUser] = useState<User | null>(null);
@@ -56,7 +54,7 @@ export default function UsersPage() {
       </div>
 
       <div className="mt-6">
-        {sortedUsers.length === 0 ? (
+        {users.length === 0 ? (
           <p className="rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-8 text-center text-zinc-500">
             No users yet.
           </p>
@@ -83,7 +81,7 @@ export default function UsersPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-200">
-                {sortedUsers.map((user) => (
+                {users.map((user) => (
                   <tr key={user.id}>
                     <td className="px-4 py-3 text-sm text-zinc-900">
                       {user.name}
