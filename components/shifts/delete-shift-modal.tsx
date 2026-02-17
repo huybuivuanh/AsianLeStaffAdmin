@@ -17,6 +17,7 @@ const WEEKDAYS = [
 interface DeleteShiftModalProps {
   isOpen: boolean;
   users: User[];
+  initialDate?: string | null;
   onClose: () => void;
   onSuccess: () => void;
 }
@@ -24,6 +25,7 @@ interface DeleteShiftModalProps {
 export function DeleteShiftModal({
   isOpen,
   users,
+  initialDate = null,
   onClose,
   onSuccess,
 }: DeleteShiftModalProps) {
@@ -39,14 +41,14 @@ export function DeleteShiftModal({
   useEffect(() => {
     if (isOpen) {
       setUserId(users[0]?.id ?? "");
-      const today = toDateKey(new Date());
-      setDate(today);
-      setStartDate(today);
-      setEndDate(today);
+      const defaultDate = initialDate ?? toDateKey(new Date());
+      setDate(defaultDate);
+      setStartDate(defaultDate);
+      setEndDate(defaultDate);
       setSelectedDays([0, 1, 2, 3, 4, 5, 6]);
       setError("");
     }
-  }, [isOpen, users]);
+  }, [isOpen, users, initialDate]);
 
   useEffect(() => {
     function handleEscape(e: KeyboardEvent) {
@@ -96,7 +98,11 @@ export function DeleteShiftModal({
       );
       onSuccess();
       onClose();
-      alert(`Deleted ${count} shift(s).`);
+      if (count === 0) {
+        alert("No shifts found in the selected range.");
+      } else {
+        alert(`Deleted ${count} shift(s).`);
+      }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to delete shifts");
     } finally {

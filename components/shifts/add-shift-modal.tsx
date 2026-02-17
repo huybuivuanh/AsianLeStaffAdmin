@@ -1,7 +1,11 @@
 "use client";
 
 import { useState, useEffect, type SubmitEvent } from "react";
-import { createShift, createShiftsBatch } from "@/lib/shifts";
+import {
+  createShift,
+  createShiftsBatch,
+  getExistingShiftDatesForUser,
+} from "@/lib/shifts";
 import { toDateKey } from "@/lib/utils";
 
 const WEEKDAYS = [
@@ -22,6 +26,7 @@ function parseLocalDate(dateStr: string): Date {
 interface AddShiftModalProps {
   isOpen: boolean;
   users: User[];
+  initialDate?: string | null;
   onClose: () => void;
   onSuccess: () => void;
 }
@@ -29,6 +34,7 @@ interface AddShiftModalProps {
 export function AddShiftModal({
   isOpen,
   users,
+  initialDate = null,
   onClose,
   onSuccess,
 }: AddShiftModalProps) {
@@ -50,14 +56,13 @@ export function AddShiftModal({
   useEffect(() => {
     if (isOpen) {
       setUserId(users[0]?.id ?? "");
-      setDate(toDateKey(new Date()));
-      setStartDate(toDateKey(new Date()));
-      const nextMonth = new Date();
-      nextMonth.setMonth(nextMonth.getMonth() + 1);
-      setEndDate(toDateKey(nextMonth));
+      const defaultDate = initialDate ?? toDateKey(new Date());
+      setDate(defaultDate);
+      setStartDate(defaultDate);
+      setEndDate(defaultDate);
       setError("");
     }
-  }, [isOpen, users]);
+  }, [isOpen, users, initialDate]);
 
   useEffect(() => {
     function handleEscape(e: KeyboardEvent) {
@@ -90,6 +95,12 @@ export function AddShiftModal({
 
     try {
       if (mode === "single") {
+        const existing = await getExistingShiftDatesForUser(user.id, date, date);
+        if (existing.has(date)) {
+          setError(`${user.name} already has a shift on this date`);
+          setSaving(false);
+          return;
+        }
         const shiftStarts = new Date(`${date}T${startTime}:00`);
         const shiftEnds = new Date(`${date}T${endTime}:00`);
         await createShift(user.id, user.name, shiftStarts, shiftEnds, date);
@@ -115,9 +126,8 @@ export function AddShiftModal({
         }> = [];
         const d = new Date(start);
         while (d <= end) {
-          const dayOfWeek = d.getDay();
-          const dayNum = dayOfWeek === 0 ? 7 : dayOfWeek;
-          if (selectedDays.includes(dayNum)) {
+          const dayOfWeek = d.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
+          if (selectedDays.includes(dayOfWeek)) {
             const dateStr = toDateKey(d);
             shifts.push({
               userId: user.id,
@@ -134,7 +144,18 @@ export function AddShiftModal({
           setSaving(false);
           return;
         }
-        await createShiftsBatch(shifts);
+        const existing = await getExistingShiftDatesForUser(
+          user.id,
+          startDate,
+          endDate
+        );
+        const shiftsToAdd = shifts.filter((s) => !existing.has(s.date));
+        if (shiftsToAdd.length === 0) {
+          setError(`${user.name} already has shifts on all selected dates`);
+          setSaving(false);
+          return;
+        }
+        await createShiftsBatch(shiftsToAdd);
       }
       onSuccess();
       onClose();

@@ -17,6 +17,7 @@ const WEEKDAYS = [
 interface EditShiftModalProps {
   isOpen: boolean;
   users: User[];
+  initialDate?: string | null;
   onClose: () => void;
   onSuccess: () => void;
 }
@@ -24,6 +25,7 @@ interface EditShiftModalProps {
 export function EditShiftModal({
   isOpen,
   users,
+  initialDate = null,
   onClose,
   onSuccess,
 }: EditShiftModalProps) {
@@ -44,17 +46,17 @@ export function EditShiftModal({
   useEffect(() => {
     if (isOpen) {
       setUserId(users[0]?.id ?? "");
-      const today = toDateKey(new Date());
-      setDate(today);
-      setStartDate(today);
-      setEndDate(today);
+      const defaultDate = initialDate ?? toDateKey(new Date());
+      setDate(defaultDate);
+      setStartDate(defaultDate);
+      setEndDate(defaultDate);
       setSelectedDays([0, 1, 2, 3, 4, 5, 6]);
       setStartTime("08:00");
       setEndTime("16:00");
       setActualHoursOverride("");
       setError("");
     }
-  }, [isOpen, users]);
+  }, [isOpen, users, initialDate]);
 
   useEffect(() => {
     function handleEscape(e: KeyboardEvent) {
@@ -125,7 +127,11 @@ export function EditShiftModal({
       );
       onSuccess();
       onClose();
-      alert(`Updated ${count} shift(s).`);
+      if (count === 0) {
+        alert("No shifts found in the selected range.");
+      } else {
+        alert(`Updated ${count} shift(s).`);
+      }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to update shifts");
     } finally {

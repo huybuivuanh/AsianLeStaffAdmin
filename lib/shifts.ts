@@ -3,6 +3,7 @@ import {
   collection,
   addDoc,
   updateDoc,
+  deleteDoc,
   serverTimestamp,
   writeBatch,
   query,
@@ -90,6 +91,28 @@ function getDayOfWeek(dateStr: string): number {
   return d.getDay();
 }
 
+/** Returns the set of dates that already have a shift for this user in the range. */
+export async function getExistingShiftDatesForUser(
+  userId: string,
+  startDate: string,
+  endDate: string
+): Promise<Set<string>> {
+  if (!clientDb) throw new Error("Database not configured");
+  const shiftsRef = collection(clientDb, "shifts");
+  const q = query(
+    shiftsRef,
+    where("userId", "==", userId),
+    where("date", ">=", startDate),
+    where("date", "<=", endDate)
+  );
+  const snapshot = await getDocs(q);
+  const dates = new Set<string>();
+  for (const d of snapshot.docs) {
+    dates.add(d.data().date as string);
+  }
+  return dates;
+}
+
 export async function deleteShifts(
   startDate: string,
   endDate: string,
@@ -106,8 +129,15 @@ export async function deleteShifts(
   if (userId) {
     q = query(q, where("userId", "==", userId));
   }
-  const snapshot = await getDocs(q);
-  let docsToDelete = snapshot.docs;
+  let snapshot;
+  try {
+    snapshot = await getDocs(q);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    throw new Error(`Failed to query shifts: ${msg}`);
+  }
+  const docs = snapshot?.docs ?? [];
+  let docsToDelete = docs;
   if (selectedDays && selectedDays.length > 0) {
     docsToDelete = docsToDelete.filter((d) => {
       const dateStr = d.data().date as string;
@@ -115,16 +145,28 @@ export async function deleteShifts(
       return selectedDays.includes(dayNum);
     });
   }
+  if (docsToDelete.length === 0) return 0;
   const batchSize = 500;
   let deleted = 0;
   for (let i = 0; i < docsToDelete.length; i += batchSize) {
-    const batch = writeBatch(clientDb);
     const chunk = docsToDelete.slice(i, i + batchSize);
+    const batch = writeBatch(clientDb);
     for (const d of chunk) {
       batch.delete(d.ref);
-      deleted++;
     }
-    await batch.commit();
+    try {
+      await batch.commit();
+      deleted += chunk.length;
+    } catch {
+      for (const d of chunk) {
+        try {
+          await deleteDoc(d.ref);
+          deleted++;
+        } catch {
+          // Doc may have been deleted - skip
+        }
+      }
+    }
   }
   return deleted;
 }
@@ -148,14 +190,22 @@ export async function updateShiftsInRange(
   if (userId) {
     q = query(q, where("userId", "==", userId));
   }
-  const snapshot = await getDocs(q);
-  let docsToUpdate = snapshot.docs;
+  let snapshot;
+  try {
+    snapshot = await getDocs(q);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    throw new Error(`Failed to query shifts: ${msg}`);
+  }
+  const docs = snapshot?.docs ?? [];
+  let docsToUpdate = docs;
   if (selectedDays && selectedDays.length > 0) {
     docsToUpdate = docsToUpdate.filter((d) => {
       const dateStr = d.data().date as string;
       return selectedDays.includes(getDayOfWeek(dateStr));
     });
   }
+  if (docsToUpdate.length === 0) return 0;
   let updated = 0;
   for (const d of docsToUpdate) {
     const dateStr = d.data().date as string;
@@ -176,8 +226,12 @@ export async function updateShiftsInRange(
       updatedAt: serverTimestamp(),
     };
     if (actualHours !== undefined) updates.actualHours = actualHours;
-    await updateDoc(shiftRef, updates);
-    updated++;
+    try {
+      await updateDoc(shiftRef, updates);
+      updated++;
+    } catch {
+      // Doc may have been deleted - skip
+    }
   }
   return updated;
 }
