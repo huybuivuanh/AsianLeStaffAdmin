@@ -47,6 +47,7 @@ export default function StaffHoursPage() {
   );
 
   const monthStart = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
+  const todayKey = toDateKey(new Date());
   const calendarDays = getDaysInMonth(
     viewDate.getFullYear(),
     viewDate.getMonth(),
@@ -97,16 +98,29 @@ export default function StaffHoursPage() {
           </div>
         </div>
 
-        <div className="mt-4 rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
-          <div className="flex items-center justify-between">
+        <div className="mt-4 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-md">
+          <div className="flex items-center justify-between border-b border-zinc-100 bg-zinc-50/80 px-5 py-4">
             <button
               type="button"
               onClick={prevMonth}
-              className="rounded px-2 py-1 text-zinc-600 hover:bg-zinc-100"
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-zinc-600 transition-colors hover:bg-zinc-200 hover:text-zinc-900"
+              aria-label="Previous month"
             >
-              ←
+              <svg
+                className="h-5 w-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 19l-7-7 7-7"
+                />
+              </svg>
             </button>
-            <span className="font-medium text-zinc-900">
+            <span className="text-lg font-semibold tracking-tight text-zinc-800">
               {viewDate.toLocaleString("default", {
                 month: "long",
                 year: "numeric",
@@ -115,44 +129,109 @@ export default function StaffHoursPage() {
             <button
               type="button"
               onClick={nextMonth}
-              className="rounded px-2 py-1 text-zinc-600 hover:bg-zinc-100"
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-zinc-600 transition-colors hover:bg-zinc-200 hover:text-zinc-900"
+              aria-label="Next month"
             >
-              →
+              <svg
+                className="h-5 w-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
+              </svg>
             </button>
           </div>
-          <div className="mt-4 grid grid-cols-7 gap-1 text-center text-xs">
-            {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
-              <div key={d} className="py-1 font-medium text-zinc-500">
-                {d}
-              </div>
-            ))}
-            {padding.map((_, i) => (
-              <div key={`pad-${i}`} />
-            ))}
-            {calendarDays.map((d) => {
-              const key = toDateKey(d);
-              const hasShifts = (shiftsByDate[key]?.length ?? 0) > 0;
-              const isSelected = selectedDate === key;
-              return (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => setSelectedDate(key)}
-                  className={`rounded py-2 text-zinc-900 hover:bg-zinc-100 ${
-                    isSelected ? "bg-blue-300 text-white hover:bg-grey-900" : ""
-                  } ${hasShifts ? "font-medium" : ""}`}
+          <div className="p-4">
+            <div className="grid grid-cols-7 gap-px rounded-lg bg-zinc-100 p-px">
+              {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
+                <div
+                  key={d}
+                  className="rounded-sm bg-zinc-50 py-2.5 text-center text-xs font-semibold uppercase tracking-wider text-zinc-500"
                 >
-                  {d.getDate()}
-                  {hasShifts && (
-                    <span
-                      className={`ml-0.5 inline-block h-1 w-1 rounded-full ${
-                        isSelected ? "bg-zinc-900" : "bg-zinc-500"
-                      }`}
-                    />
-                  )}
-                </button>
-              );
-            })}
+                  {d}
+                </div>
+              ))}
+              {padding.map((_, i) => (
+                <div key={`pad-${i}`} className="aspect-[4/3]" />
+              ))}
+              {calendarDays.map((d) => {
+                const key = toDateKey(d);
+                const dayShifts = shiftsByDate[key] ?? [];
+                const shift = dayShifts[0];
+                const isSelected = selectedDate === key;
+                const isToday = key === todayKey;
+                const isPast = key < todayKey;
+                const clockedInLate =
+                  shift?.clockInTime &&
+                  shift.clockInTime.getTime() >
+                    shift.shiftStarts.getTime() + 5 * 60 * 1000;
+                const notClockedIn = shift && !shift.clockInTime && isPast;
+                const shiftTime = shift
+                  ? `${shift.shiftStarts.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}–${shift.shiftEnds.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`
+                  : null;
+                const clockInText = shift?.clockInTime
+                  ? shift.clockInTime.toLocaleTimeString([], {
+                      hour: "numeric",
+                      minute: "2-digit",
+                    })
+                  : "";
+                const statusText = shift
+                  ? notClockedIn
+                    ? "Not clocked in"
+                    : shiftTime
+                  : null;
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setSelectedDate(key)}
+                    className={`relative flex aspect-[4/3] min-w-0 flex-col items-start justify-start gap-0.5 rounded-md px-2 py-1.5 text-left transition-all ${
+                      isSelected
+                        ? "bg-blue-600 text-white shadow-sm ring-2 ring-blue-600 ring-offset-1"
+                        : clockedInLate
+                          ? "bg-red-50 text-red-900 hover:bg-red-100"
+                          : isToday
+                            ? "bg-amber-50 text-amber-900 ring-1 ring-amber-300 hover:bg-amber-100"
+                            : "bg-white text-zinc-800 hover:bg-zinc-50"
+                    }`}
+                  >
+                    <span className="text-lg font-semibold">{d.getDate()}</span>
+                    {shift && (
+                      <div className="flex min-w-0 max-w-full flex-col gap-0.5">
+                        {statusText && (
+                          <span
+                            className={`truncate text-sm leading-tight ${
+                              isSelected
+                                ? "text-blue-100"
+                                : notClockedIn
+                                  ? "text-red-600 font-medium"
+                                  : clockedInLate
+                                    ? "text-red-700"
+                                    : "text-zinc-600"
+                            }`}
+                          >
+                            {statusText}
+                          </span>
+                        )}
+                        <span
+                          className={`truncate text-xs leading-tight ${
+                            isSelected ? "text-blue-200" : "text-zinc-500"
+                          }`}
+                        >
+                          Clocked At: {clockInText}
+                        </span>
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
 
@@ -229,11 +308,11 @@ export default function StaffHoursPage() {
                         })}{" "}
                         • {formatHours(getHoursWorked(shift))}
                       </div>
-                    ) : (
+                    ) : selectedDate && selectedDate < todayKey ? (
                       <div className="mt-1 text-xs text-amber-600">
                         Not clocked in
                       </div>
-                    )}
+                    ) : null}
                   </div>
                 ))}
                 <div className="border-t border-zinc-200 pt-3 font-medium text-zinc-900">
