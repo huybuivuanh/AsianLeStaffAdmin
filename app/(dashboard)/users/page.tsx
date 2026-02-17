@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useUsers } from "@/hooks/use-users";
 import { UserModal } from "@/components/users/user-modal";
+import { deleteUser } from "@/lib/users";
 
 export default function UsersPage() {
   const users = useUsers();
@@ -25,6 +26,15 @@ export default function UsersPage() {
   function closeModal() {
     setModalOpen(false);
     setEditingUser(null);
+  }
+
+  async function handleDelete(user: User) {
+    if (!confirm(`Delete ${user.name}? This cannot be undone.`)) return;
+    try {
+      await deleteUser(user.id);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to delete user");
+    }
   }
 
   return (
@@ -90,13 +100,22 @@ export default function UsersPage() {
                         : "—"}
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <button
-                        type="button"
-                        onClick={() => openEdit(user)}
-                        className="rounded-lg bg-zinc-200 px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-300"
-                      >
-                        Edit
-                      </button>
+                      <div className="flex justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => openEdit(user)}
+                          className="rounded-lg bg-zinc-200 px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-300"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(user)}
+                          className="rounded-lg bg-red-100 px-3 py-1.5 text-sm font-medium text-red-700 transition-colors hover:bg-red-200"
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

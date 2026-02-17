@@ -3,6 +3,7 @@ import {
   collection,
   addDoc,
   updateDoc,
+  deleteDoc,
   serverTimestamp,
 } from "firebase/firestore";
 import { clientDb } from "./firebaseConfig";
@@ -14,6 +15,12 @@ export async function addUser(name: string, pin: string): Promise<void> {
     pin: pin.trim(),
     createdAt: serverTimestamp(),
   });
+}
+
+export async function deleteUser(userId: string): Promise<void> {
+  if (!clientDb) throw new Error("Database not configured");
+  const userRef = doc(clientDb, "users", userId);
+  await deleteDoc(userRef);
 }
 
 export async function updateUser(

@@ -52,6 +52,11 @@ export function UserModal({
     try {
       const nameVal = name.trim();
       const pinVal = pin.trim();
+      if (pinVal.length !== 4) {
+        setError("PIN must be exactly 4 digits");
+        setSaving(false);
+        return;
+      }
 
       if (mode === "add") {
         await addUser(nameVal, pinVal);
@@ -115,9 +120,10 @@ export function UserModal({
               type="text"
               inputMode="numeric"
               value={pin}
-              onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
+              onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
               required
-              maxLength={6}
+              maxLength={4}
+              placeholder="4 digits"
               className="mt-1 w-full rounded-lg border border-zinc-300 px-4 py-2.5 font-mono text-zinc-900 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
             />
           </div>
