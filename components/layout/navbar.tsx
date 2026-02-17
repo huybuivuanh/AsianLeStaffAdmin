@@ -8,7 +8,8 @@ import { auth } from "@/lib/firebaseConfig";
 const navItems = [
   { href: "/", label: "Dashboard" },
   { href: "/users", label: "Users" },
-  { href: "/staff-hours", label: "Staff Schedule" },
+  { href: "/staff-schedule", label: "Staff Schedule" },
+  { href: "/staff-hours", label: "Staff Hours" },
 ] as const;
 
 export function Navbar() {
