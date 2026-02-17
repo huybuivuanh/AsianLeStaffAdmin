@@ -67,10 +67,8 @@ export default function StaffHoursPage() {
   return (
     <div>
       <div>
-        <h1 className="text-2xl font-semibold text-zinc-900">Staff Hours</h1>
-        <p className="mt-2 text-zinc-600">
-          View shifts and hours by staff member.
-        </p>
+        <h1 className="text-2xl font-semibold text-zinc-900">Staff Schedule</h1>
+        <p className="mt-2 text-zinc-600">View schedule by staff member.</p>
       </div>
 
       <div className="mt-6">

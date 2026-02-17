@@ -8,7 +8,7 @@ import { auth } from "@/lib/firebaseConfig";
 const navItems = [
   { href: "/", label: "Dashboard" },
   { href: "/users", label: "Users" },
-  { href: "/staff-hours", label: "Staff Hours" },
+  { href: "/staff-hours", label: "Staff Schedule" },
 ] as const;
 
 export function Navbar() {
@@ -29,9 +29,11 @@ export function Navbar() {
               key={item.href}
               href={item.href}
               className={`rounded-lg px-4 py-2.5 text-sm font-medium transition-colors ${
-                (item.href === "/"
-                  ? pathname === "/"
-                  : pathname.startsWith(item.href))
+                (
+                  item.href === "/"
+                    ? pathname === "/"
+                    : pathname.startsWith(item.href)
+                )
                   ? "bg-zinc-700 text-white"
                   : "bg-zinc-800/60 text-zinc-400 hover:bg-zinc-700 hover:text-white"
               }`}
