@@ -4,6 +4,12 @@ import { useState, useEffect, type FormEvent } from "react";
 import { updateShiftsInRange } from "@/lib/shifts";
 import { toDateKey } from "@/lib/utils";
 
+function toTimeStr(d: Date): string {
+  const h = d.getHours();
+  const m = d.getMinutes();
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
 const WEEKDAYS = [
   { value: 0, label: "Sun" },
   { value: 1, label: "Mon" },
@@ -18,6 +24,7 @@ interface EditShiftModalProps {
   isOpen: boolean;
   users: User[];
   initialDate?: string | null;
+  initialShifts?: Shift[];
   onClose: () => void;
   onSuccess: () => void;
 }
@@ -26,6 +33,7 @@ export function EditShiftModal({
   isOpen,
   users,
   initialDate = null,
+  initialShifts = [],
   onClose,
   onSuccess,
 }: EditShiftModalProps) {
@@ -45,18 +53,43 @@ export function EditShiftModal({
 
   useEffect(() => {
     if (isOpen) {
-      setUserId(users[0]?.id ?? "");
+      const defaultUserId = users[0]?.id ?? "";
+      setUserId(defaultUserId);
       const defaultDate = initialDate ?? toDateKey(new Date());
       setDate(defaultDate);
       setStartDate(defaultDate);
       setEndDate(defaultDate);
       setSelectedDays([0, 1, 2, 3, 4, 5, 6]);
-      setStartTime("08:00");
-      setEndTime("16:00");
+      const shift = initialShifts.find(
+        (s) => s.userId === defaultUserId && s.date === defaultDate
+      );
+      if (shift) {
+        setStartTime(toTimeStr(shift.shiftStarts));
+        setEndTime(toTimeStr(shift.shiftEnds));
+      } else {
+        setStartTime("08:00");
+        setEndTime("16:00");
+      }
       setActualHoursOverride("");
       setError("");
     }
-  }, [isOpen, users, initialDate]);
+  }, [isOpen, users, initialDate, initialShifts]);
+
+  function handleUserIdChange(newUserId: string) {
+    setUserId(newUserId);
+    if (initialDate && initialShifts.length > 0) {
+      const shift = initialShifts.find(
+        (s) => s.userId === newUserId && s.date === initialDate
+      );
+      if (shift) {
+        setStartTime(toTimeStr(shift.shiftStarts));
+        setEndTime(toTimeStr(shift.shiftEnds));
+      } else {
+        setStartTime("08:00");
+        setEndTime("16:00");
+      }
+    }
+  }
 
   useEffect(() => {
     function handleEscape(e: KeyboardEvent) {
@@ -168,7 +201,7 @@ export function EditShiftModal({
             </label>
             <select
               value={userId}
-              onChange={(e) => setUserId(e.target.value)}
+              onChange={(e) => handleUserIdChange(e.target.value)}
               required
               className="mt-1 w-full rounded-lg border border-zinc-300 px-4 py-2.5 text-zinc-900 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
             >

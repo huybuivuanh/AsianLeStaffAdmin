@@ -264,6 +264,9 @@ export default function StaffHoursPage() {
         isOpen={editShiftModalOpen}
         users={users}
         initialDate={selectedDate}
+        initialShifts={
+          selectedDate ? shifts.filter((s) => s.date === selectedDate) : []
+        }
         onClose={() => setEditShiftModalOpen(false)}
         onSuccess={() => {}}
       />
