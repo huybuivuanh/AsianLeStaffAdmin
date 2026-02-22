@@ -18,12 +18,22 @@ function toFirestoreTimestamp(date: Date): Timestamp {
   return Timestamp.fromDate(date);
 }
 
+function getBreakHours(shift: Shift): number {
+  if (!shift.break) return 0;
+  return (
+    (shift.break.end.getTime() - shift.break.start.getTime()) /
+    (1000 * 60 * 60)
+  );
+}
+
 export function getHoursWorked(shift: Shift): number {
   if (shift.actualHours !== undefined) return shift.actualHours;
   if (!shift.clockInTime) return 0;
   const start = shift.clockInTime.getTime();
   const end = shift.shift.end.getTime();
-  return Math.max(0, (end - start) / (1000 * 60 * 60));
+  const grossHours = (end - start) / (1000 * 60 * 60);
+  const breakHours = getBreakHours(shift);
+  return Math.max(0, grossHours - breakHours);
 }
 
 export async function createShiftsBatch(
@@ -31,6 +41,7 @@ export async function createShiftsBatch(
     userId: string;
     userName: string;
     shift: TimeRange;
+    break?: TimeRange | null;
     date: string;
   }>,
 ): Promise<void> {
@@ -39,7 +50,7 @@ export async function createShiftsBatch(
   const shiftsRef = collection(clientDb, "shifts");
   for (const s of shifts) {
     const ref = doc(shiftsRef);
-    firestoreBatch.set(ref, {
+    const data: Record<string, unknown> = {
       userId: s.userId,
       userName: s.userName,
       shift: {
@@ -47,7 +58,14 @@ export async function createShiftsBatch(
         end: toFirestoreTimestamp(s.shift.end),
       },
       date: s.date,
-    });
+    };
+    if (s.break) {
+      data.break = {
+        start: toFirestoreTimestamp(s.break.start),
+        end: toFirestoreTimestamp(s.break.end),
+      };
+    }
+    firestoreBatch.set(ref, data);
   }
   await firestoreBatch.commit();
 }
@@ -57,9 +75,10 @@ export async function createShift(
   userName: string,
   shift: TimeRange,
   date: string,
+  breakRange?: TimeRange | null,
 ): Promise<string> {
   if (!clientDb) throw new Error("Database not configured");
-  const ref = await addDoc(collection(clientDb, "shifts"), {
+  const data: Record<string, unknown> = {
     userId,
     userName,
     shift: {
@@ -67,7 +86,14 @@ export async function createShift(
       end: toFirestoreTimestamp(shift.end),
     },
     date,
-  });
+  };
+  if (breakRange) {
+    data.break = {
+      start: toFirestoreTimestamp(breakRange.start),
+      end: toFirestoreTimestamp(breakRange.end),
+    };
+  }
+  const ref = await addDoc(collection(clientDb, "shifts"), data);
   return ref.id;
 }
 
@@ -188,6 +214,7 @@ export async function updateShiftsInRange(
   userId?: string,
   selectedDays?: number[],
   actualHours?: number,
+  breakRange?: TimeRange | null,
 ): Promise<number> {
   if (!clientDb) throw new Error("Database not configured");
   const shiftsRef = collection(clientDb, "shifts");
@@ -237,6 +264,30 @@ export async function updateShiftsInRange(
       updatedAt: serverTimestamp(),
     };
     if (actualHours !== undefined) updates.actualHours = actualHours;
+    if (breakRange !== undefined) {
+      if (breakRange) {
+        const breakStart = new Date(baseDate);
+        breakStart.setHours(
+          breakRange.start.getHours(),
+          breakRange.start.getMinutes(),
+          0,
+          0,
+        );
+        const breakEnd = new Date(baseDate);
+        breakEnd.setHours(
+          breakRange.end.getHours(),
+          breakRange.end.getMinutes(),
+          0,
+          0,
+        );
+        updates.break = {
+          start: toFirestoreTimestamp(breakStart),
+          end: toFirestoreTimestamp(breakEnd),
+        };
+      } else {
+        updates.break = deleteField();
+      }
+    }
     try {
       await updateDoc(shiftRef, updates);
       updated++;
@@ -251,6 +302,7 @@ export async function updateShift(
   shiftId: string,
   data: {
     shift?: TimeRange;
+    break?: TimeRange | null;
     actualHours?: number;
   },
 ): Promise<void> {
@@ -262,6 +314,16 @@ export async function updateShift(
       start: toFirestoreTimestamp(data.shift.start),
       end: toFirestoreTimestamp(data.shift.end),
     };
+  }
+  if (data.break !== undefined) {
+    if (data.break) {
+      updates.break = {
+        start: toFirestoreTimestamp(data.break.start),
+        end: toFirestoreTimestamp(data.break.end),
+      };
+    } else {
+      updates.break = deleteField();
+    }
   }
   if (data.actualHours !== undefined) updates.actualHours = data.actualHours;
   await updateDoc(shiftRef, updates);

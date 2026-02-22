@@ -17,6 +17,14 @@ export function useShifts() {
       (snapshot) => {
         const list: Shift[] = snapshot.docs.map((d) => {
           const data = d.data();
+          const breakData = data.break;
+          const breakRange: TimeRange | null =
+            breakData?.start && breakData?.end
+              ? {
+                  start: breakData.start.toDate(),
+                  end: breakData.end.toDate(),
+                }
+              : null;
           return {
             id: d.id,
             userId: data.userId as string,
@@ -25,6 +33,7 @@ export function useShifts() {
               start: data.shift?.start?.toDate?.() ?? new Date(),
               end: data.shift?.end?.toDate?.() ?? new Date(),
             },
+            break: breakRange,
             date: data.date as string,
             clockInTime: data.clockInTime?.toDate?.() ?? null,
             actualHours: data.actualHours as number | undefined,

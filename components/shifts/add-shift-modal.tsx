@@ -47,9 +47,14 @@ export function AddShiftModal({
     d.setMonth(d.getMonth() + 1);
     return toDateKey(d);
   });
-  const [selectedDays, setSelectedDays] = useState<number[]>([1, 2, 3, 4, 5]);
+  const [selectedDays, setSelectedDays] = useState<number[]>([
+    1, 2, 3, 4, 5, 6,
+  ]);
   const [startTime, setStartTime] = useState("08:00");
   const [endTime, setEndTime] = useState("16:00");
+  const [noBreak, setNoBreak] = useState(false);
+  const [breakStartTime, setBreakStartTime] = useState("15:00");
+  const [breakEndTime, setBreakEndTime] = useState("16:00");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -95,7 +100,11 @@ export function AddShiftModal({
 
     try {
       if (mode === "single") {
-        const existing = await getExistingShiftDatesForUser(user.id, date, date);
+        const existing = await getExistingShiftDatesForUser(
+          user.id,
+          date,
+          date,
+        );
         if (existing.has(date)) {
           setError(`${user.name} already has a shift on this date`);
           setSaving(false);
@@ -105,7 +114,13 @@ export function AddShiftModal({
           start: new Date(`${date}T${startTime}:00`),
           end: new Date(`${date}T${endTime}:00`),
         };
-        await createShift(user.id, user.name, shift, date);
+        const breakRange = noBreak
+          ? null
+          : {
+              start: new Date(`${date}T${breakStartTime}:00`),
+              end: new Date(`${date}T${breakEndTime}:00`),
+            };
+        await createShift(user.id, user.name, shift, date, breakRange);
       } else {
         if (selectedDays.length === 0) {
           setError("Select at least one day of the week");
@@ -123,6 +138,7 @@ export function AddShiftModal({
           userId: string;
           userName: string;
           shift: TimeRange;
+          break?: TimeRange | null;
           date: string;
         }> = [];
         const d = new Date(start);
@@ -130,13 +146,21 @@ export function AddShiftModal({
           const dayOfWeek = d.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
           if (selectedDays.includes(dayOfWeek)) {
             const dateStr = toDateKey(d);
+            const shiftForDay: TimeRange = {
+              start: new Date(`${dateStr}T${startTime}:00`),
+              end: new Date(`${dateStr}T${endTime}:00`),
+            };
+            const breakForDay = noBreak
+              ? null
+              : {
+                  start: new Date(`${dateStr}T${breakStartTime}:00`),
+                  end: new Date(`${dateStr}T${breakEndTime}:00`),
+                };
             shifts.push({
               userId: user.id,
               userName: user.name,
-              shift: {
-                start: new Date(`${dateStr}T${startTime}:00`),
-                end: new Date(`${dateStr}T${endTime}:00`),
-              },
+              shift: shiftForDay,
+              break: breakForDay,
               date: dateStr,
             });
           }
@@ -150,7 +174,7 @@ export function AddShiftModal({
         const existing = await getExistingShiftDatesForUser(
           user.id,
           startDate,
-          endDate
+          endDate,
         );
         const shiftsToAdd = shifts.filter((s) => !existing.has(s.date));
         if (shiftsToAdd.length === 0) {
@@ -200,7 +224,9 @@ export function AddShiftModal({
               className="mt-1 w-full rounded-lg border border-zinc-300 px-4 py-2.5 text-zinc-900 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
             >
               {users.length === 0 ? (
-                <option value="" disabled>No staff</option>
+                <option value="" disabled>
+                  No staff
+                </option>
               ) : null}
               {users.map((u) => (
                 <option key={u.id} value={u.id}>
@@ -323,6 +349,46 @@ export function AddShiftModal({
                 className="mt-1 w-full rounded-lg border border-zinc-300 px-4 py-2.5 text-zinc-900 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
               />
             </div>
+          </div>
+
+          <div>
+            <label className="flex cursor-pointer items-center gap-2">
+              <input
+                type="checkbox"
+                checked={noBreak}
+                onChange={(e) => setNoBreak(e.target.checked)}
+                className="rounded text-zinc-900"
+              />
+              <span className="text-sm font-medium text-zinc-700">
+                No break
+              </span>
+            </label>
+            {!noBreak && (
+              <div className="mt-2 grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs text-zinc-500">
+                    Break start
+                  </label>
+                  <input
+                    type="time"
+                    value={breakStartTime}
+                    onChange={(e) => setBreakStartTime(e.target.value)}
+                    className="mt-1 w-full rounded-lg border border-zinc-300 px-4 py-2.5 text-zinc-900 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-zinc-500">
+                    Break end
+                  </label>
+                  <input
+                    type="time"
+                    value={breakEndTime}
+                    onChange={(e) => setBreakEndTime(e.target.value)}
+                    className="mt-1 w-full rounded-lg border border-zinc-300 px-4 py-2.5 text-zinc-900 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="flex gap-3 pt-2">

@@ -265,6 +265,9 @@ export default function StaffHoursPage() {
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-600">
                       Clock-in
                     </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-600">
+                      Break
+                    </th>
                     <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-zinc-600">
                       Hours
                     </th>
@@ -277,7 +280,7 @@ export default function StaffHoursPage() {
                   {filteredShifts.length === 0 ? (
                     <tr>
                       <td
-                        colSpan={6}
+                        colSpan={7}
                         className="px-4 py-8 text-center text-sm text-zinc-500"
                       >
                         No shifts in this range.
@@ -332,6 +335,11 @@ export default function StaffHoursPage() {
                                   hour: "2-digit",
                                   minute: "2-digit",
                                 })
+                              : "–"}
+                          </td>
+                          <td className="whitespace-nowrap px-4 py-3 text-sm text-zinc-600">
+                            {s.break
+                              ? `${s.break.start.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} – ${s.break.end.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
                               : "–"}
                           </td>
                           <td className="whitespace-nowrap px-4 py-3 text-right text-sm font-medium text-zinc-900">

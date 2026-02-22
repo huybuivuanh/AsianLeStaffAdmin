@@ -17,6 +17,7 @@ declare global {
     userId: string;
     userName: string;
     shift: TimeRange;
+    break?: TimeRange | null;
     date: string;
     clockInTime?: Date | null;
     actualHours?: number;

@@ -47,6 +47,9 @@ export function EditShiftModal({
   ]);
   const [startTime, setStartTime] = useState("08:00");
   const [endTime, setEndTime] = useState("16:00");
+  const [noBreak, setNoBreak] = useState(true);
+  const [breakStartTime, setBreakStartTime] = useState("15:00");
+  const [breakEndTime, setBreakEndTime] = useState("16:00");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -65,9 +68,21 @@ export function EditShiftModal({
       if (shift) {
         setStartTime(toTimeStr(shift.shift.start));
         setEndTime(toTimeStr(shift.shift.end));
+        if (shift.break) {
+          setNoBreak(false);
+          setBreakStartTime(toTimeStr(shift.break.start));
+          setBreakEndTime(toTimeStr(shift.break.end));
+        } else {
+          setNoBreak(true);
+          setBreakStartTime("15:00");
+          setBreakEndTime("16:00");
+        }
       } else {
         setStartTime("08:00");
         setEndTime("16:00");
+        setNoBreak(true);
+        setBreakStartTime("15:00");
+        setBreakEndTime("16:00");
       }
       setError("");
     }
@@ -82,9 +97,21 @@ export function EditShiftModal({
       if (shift) {
         setStartTime(toTimeStr(shift.shift.start));
         setEndTime(toTimeStr(shift.shift.end));
+        if (shift.break) {
+          setNoBreak(false);
+          setBreakStartTime(toTimeStr(shift.break.start));
+          setBreakEndTime(toTimeStr(shift.break.end));
+        } else {
+          setNoBreak(true);
+          setBreakStartTime("15:00");
+          setBreakEndTime("16:00");
+        }
       } else {
         setStartTime("08:00");
         setEndTime("16:00");
+        setNoBreak(true);
+        setBreakStartTime("15:00");
+        setBreakEndTime("16:00");
       }
     }
   }
@@ -135,13 +162,21 @@ export function EditShiftModal({
       }
       const daysFilter =
         mode === "range" && selectedDays.length > 0 ? selectedDays : undefined;
+      const breakRange = noBreak
+        ? null
+        : {
+            start: new Date(`${start}T${breakStartTime}:00`),
+            end: new Date(`${start}T${breakEndTime}:00`),
+          };
       const count = await updateShiftsInRange(
         start,
         end,
         shiftStarts,
         shiftEnds,
         userId,
-        daysFilter
+        daysFilter,
+        undefined,
+        breakRange
       );
       onSuccess();
       onClose();
@@ -320,6 +355,44 @@ export function EditShiftModal({
                 />
               </div>
             </div>
+          </div>
+
+          <div>
+            <label className="flex cursor-pointer items-center gap-2">
+              <input
+                type="checkbox"
+                checked={noBreak}
+                onChange={(e) => setNoBreak(e.target.checked)}
+                className="rounded text-zinc-900"
+              />
+              <span className="text-sm font-medium text-zinc-700">No break</span>
+            </label>
+            {!noBreak && (
+              <div className="mt-2 grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs text-zinc-500">
+                    Break start
+                  </label>
+                  <input
+                    type="time"
+                    value={breakStartTime}
+                    onChange={(e) => setBreakStartTime(e.target.value)}
+                    className="mt-1 w-full rounded-lg border border-zinc-300 px-4 py-2.5 text-zinc-900 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-zinc-500">
+                    Break end
+                  </label>
+                  <input
+                    type="time"
+                    value={breakEndTime}
+                    onChange={(e) => setBreakEndTime(e.target.value)}
+                    className="mt-1 w-full rounded-lg border border-zinc-300 px-4 py-2.5 text-zinc-900 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="flex gap-3 pt-2">
