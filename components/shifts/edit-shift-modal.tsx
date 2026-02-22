@@ -64,8 +64,8 @@ export function EditShiftModal({
         (s) => s.userId === defaultUserId && s.date === defaultDate
       );
       if (shift) {
-        setStartTime(toTimeStr(shift.shiftStarts));
-        setEndTime(toTimeStr(shift.shiftEnds));
+        setStartTime(toTimeStr(shift.shift.start));
+        setEndTime(toTimeStr(shift.shift.end));
       } else {
         setStartTime("08:00");
         setEndTime("16:00");
@@ -82,8 +82,8 @@ export function EditShiftModal({
         (s) => s.userId === newUserId && s.date === initialDate
       );
       if (shift) {
-        setStartTime(toTimeStr(shift.shiftStarts));
-        setEndTime(toTimeStr(shift.shiftEnds));
+        setStartTime(toTimeStr(shift.shift.start));
+        setEndTime(toTimeStr(shift.shift.end));
       } else {
         setStartTime("08:00");
         setEndTime("16:00");

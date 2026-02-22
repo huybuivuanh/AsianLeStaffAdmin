@@ -168,10 +168,10 @@ export default function StaffHoursPage() {
                 const clockedInLate =
                   shift?.clockInTime &&
                   shift.clockInTime.getTime() >
-                    shift.shiftStarts.getTime() + 5 * 60 * 1000;
+                    shift.shift.start.getTime() + 5 * 60 * 1000;
                 const notClockedIn = shift && !shift.clockInTime && isPast;
                 const shiftTime = shift
-                  ? `${shift.shiftStarts.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}–${shift.shiftEnds.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`
+                  ? `${shift.shift.start.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}–${shift.shift.end.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`
                   : null;
                 const clockInText = shift?.clockInTime
                   ? shift.clockInTime.toLocaleTimeString([], {
@@ -297,12 +297,12 @@ export default function StaffHoursPage() {
                       {shift.userName}
                     </div>
                     <div className="text-zinc-600">
-                      {shift.shiftStarts.toLocaleTimeString([], {
+                      {shift.shift.start.toLocaleTimeString([], {
                         hour: "2-digit",
                         minute: "2-digit",
                       })}{" "}
                       –{" "}
-                      {shift.shiftEnds.toLocaleTimeString([], {
+                      {shift.shift.end.toLocaleTimeString([], {
                         hour: "2-digit",
                         minute: "2-digit",
                       })}

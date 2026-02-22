@@ -1,7 +1,3 @@
-/**
- * Global type definitions — use these types without importing.
- * Add new shared types here.
- */
 declare global {
   interface User {
     id: string;
@@ -11,13 +7,16 @@ declare global {
     updatedAt?: Date;
   }
 
-  /** Schedule or completed shift (unified) */
+  interface TimeRange {
+    start: Date;
+    end: Date;
+  }
+
   interface Shift {
     id: string;
     userId: string;
     userName: string;
-    shiftStarts: Date;
-    shiftEnds: Date;
+    shift: TimeRange;
     date: string;
     clockInTime?: Date | null;
     actualHours?: number;

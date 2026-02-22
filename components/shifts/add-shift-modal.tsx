@@ -101,9 +101,11 @@ export function AddShiftModal({
           setSaving(false);
           return;
         }
-        const shiftStarts = new Date(`${date}T${startTime}:00`);
-        const shiftEnds = new Date(`${date}T${endTime}:00`);
-        await createShift(user.id, user.name, shiftStarts, shiftEnds, date);
+        const shift: TimeRange = {
+          start: new Date(`${date}T${startTime}:00`),
+          end: new Date(`${date}T${endTime}:00`),
+        };
+        await createShift(user.id, user.name, shift, date);
       } else {
         if (selectedDays.length === 0) {
           setError("Select at least one day of the week");
@@ -120,8 +122,7 @@ export function AddShiftModal({
         const shifts: Array<{
           userId: string;
           userName: string;
-          shiftStarts: Date;
-          shiftEnds: Date;
+          shift: TimeRange;
           date: string;
         }> = [];
         const d = new Date(start);
@@ -132,8 +133,10 @@ export function AddShiftModal({
             shifts.push({
               userId: user.id,
               userName: user.name,
-              shiftStarts: new Date(`${dateStr}T${startTime}:00`),
-              shiftEnds: new Date(`${dateStr}T${endTime}:00`),
+              shift: {
+                start: new Date(`${dateStr}T${startTime}:00`),
+                end: new Date(`${dateStr}T${endTime}:00`),
+              },
               date: dateStr,
             });
           }

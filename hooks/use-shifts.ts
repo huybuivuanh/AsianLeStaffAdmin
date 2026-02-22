@@ -21,8 +21,10 @@ export function useShifts() {
             id: d.id,
             userId: data.userId as string,
             userName: data.userName as string,
-            shiftStarts: data.shiftStarts?.toDate?.() ?? new Date(),
-            shiftEnds: data.shiftEnds?.toDate?.() ?? new Date(),
+            shift: {
+              start: data.shift?.start?.toDate?.() ?? new Date(),
+              end: data.shift?.end?.toDate?.() ?? new Date(),
+            },
             date: data.date as string,
             clockInTime: data.clockInTime?.toDate?.() ?? null,
             actualHours: data.actualHours as number | undefined,

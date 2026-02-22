@@ -21,7 +21,7 @@ export function getHoursWorked(shift: Shift): number {
   if (shift.actualHours !== undefined) return shift.actualHours;
   if (!shift.clockInTime) return 0;
   const start = shift.clockInTime.getTime();
-  const end = shift.shiftEnds.getTime();
+  const end = shift.shift.end.getTime();
   return Math.max(0, (end - start) / (1000 * 60 * 60));
 }
 
@@ -29,8 +29,7 @@ export async function createShiftsBatch(
   shifts: Array<{
     userId: string;
     userName: string;
-    shiftStarts: Date;
-    shiftEnds: Date;
+    shift: TimeRange;
     date: string;
   }>,
 ): Promise<void> {
@@ -42,8 +41,10 @@ export async function createShiftsBatch(
     firestoreBatch.set(ref, {
       userId: s.userId,
       userName: s.userName,
-      shiftStarts: toFirestoreTimestamp(s.shiftStarts),
-      shiftEnds: toFirestoreTimestamp(s.shiftEnds),
+      shift: {
+        start: toFirestoreTimestamp(s.shift.start),
+        end: toFirestoreTimestamp(s.shift.end),
+      },
       date: s.date,
     });
   }
@@ -53,16 +54,17 @@ export async function createShiftsBatch(
 export async function createShift(
   userId: string,
   userName: string,
-  shiftStarts: Date,
-  shiftEnds: Date,
+  shift: TimeRange,
   date: string,
 ): Promise<string> {
   if (!clientDb) throw new Error("Database not configured");
   const ref = await addDoc(collection(clientDb, "shifts"), {
     userId,
     userName,
-    shiftStarts: toFirestoreTimestamp(shiftStarts),
-    shiftEnds: toFirestoreTimestamp(shiftEnds),
+    shift: {
+      start: toFirestoreTimestamp(shift.start),
+      end: toFirestoreTimestamp(shift.end),
+    },
     date,
   });
   return ref.id;
@@ -221,8 +223,10 @@ export async function updateShiftsInRange(
     newEnds.setHours(endHours, endMins, 0, 0);
     const shiftRef = doc(clientDb, "shifts", d.id);
     const updates: Record<string, unknown> = {
-      shiftStarts: toFirestoreTimestamp(newStarts),
-      shiftEnds: toFirestoreTimestamp(newEnds),
+      shift: {
+        start: toFirestoreTimestamp(newStarts),
+        end: toFirestoreTimestamp(newEnds),
+      },
       updatedAt: serverTimestamp(),
     };
     if (actualHours !== undefined) updates.actualHours = actualHours;
@@ -239,17 +243,19 @@ export async function updateShiftsInRange(
 export async function updateShift(
   shiftId: string,
   data: {
-    shiftStarts?: Date;
-    shiftEnds?: Date;
+    shift?: TimeRange;
     actualHours?: number;
   },
 ): Promise<void> {
   if (!clientDb) throw new Error("Database not configured");
   const shiftRef = doc(clientDb, "shifts", shiftId);
   const updates: Record<string, unknown> = {};
-  if (data.shiftStarts)
-    updates.shiftStarts = toFirestoreTimestamp(data.shiftStarts);
-  if (data.shiftEnds) updates.shiftEnds = toFirestoreTimestamp(data.shiftEnds);
+  if (data.shift) {
+    updates.shift = {
+      start: toFirestoreTimestamp(data.shift.start),
+      end: toFirestoreTimestamp(data.shift.end),
+    };
+  }
   if (data.actualHours !== undefined) updates.actualHours = data.actualHours;
   await updateDoc(shiftRef, updates);
 }
