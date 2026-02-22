@@ -4,6 +4,7 @@ import {
   addDoc,
   updateDoc,
   deleteDoc,
+  deleteField,
   serverTimestamp,
   writeBatch,
   query,
@@ -85,6 +86,12 @@ export async function updateShiftActualHours(
   if (!clientDb) throw new Error("Database not configured");
   const shiftRef = doc(clientDb, "shifts", shiftId);
   await updateDoc(shiftRef, { actualHours });
+}
+
+export async function clearShiftActualHours(shiftId: string): Promise<void> {
+  if (!clientDb) throw new Error("Database not configured");
+  const shiftRef = doc(clientDb, "shifts", shiftId);
+  await updateDoc(shiftRef, { actualHours: deleteField() });
 }
 
 function getDayOfWeek(dateStr: string): number {

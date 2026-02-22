@@ -4,7 +4,19 @@ import { useState, useMemo } from "react";
 import { useUsers } from "@/hooks/use-users";
 import { useShifts } from "@/hooks/use-shifts";
 import { toDateKey, formatHours } from "@/lib/utils";
-import { getHoursWorked } from "@/lib/shifts";
+import {
+  getHoursWorked,
+  updateShiftActualHours,
+  clearShiftActualHours,
+} from "@/lib/shifts";
+
+function isClockInLate(shift: Shift): boolean {
+  if (!shift.clockInTime) return false;
+  return (
+    shift.clockInTime.getTime() >
+    shift.shift.start.getTime() + 5 * 60 * 1000
+  );
+}
 
 function getWeekKey(dateStr: string): string {
   const d = new Date(dateStr + "T12:00:00");
@@ -70,6 +82,8 @@ export default function StaffHoursPage() {
     d.setDate(d.getDate() - d.getDay());
     return toDateKey(d);
   });
+  const [editingShiftId, setEditingShiftId] = useState<string | null>(null);
+  const [editHoursInput, setEditHoursInput] = useState("");
 
   const { start: effectiveStart, end: effectiveEnd } = useMemo(() => {
     if (viewBy === "month") return getMonthRange(selectedMonth);
@@ -296,54 +310,87 @@ export default function StaffHoursPage() {
                     <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-zinc-600">
                       Hours
                     </th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-zinc-600">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-100 bg-white">
                   {filteredShifts.length === 0 ? (
                     <tr>
                       <td
-                        colSpan={5}
+                        colSpan={6}
                         className="px-4 py-8 text-center text-sm text-zinc-500"
                       >
                         No shifts in this range.
                       </td>
                     </tr>
                   ) : (
-                    filteredShifts.map((s) => (
-                      <tr key={s.id} className="hover:bg-zinc-50/50">
-                        <td className="whitespace-nowrap px-4 py-3 text-sm text-zinc-900">
-                          {new Date(s.date + "T12:00:00").toLocaleDateString(
-                            undefined,
-                            { weekday: "short", month: "short", day: "numeric", year: "numeric" }
-                          )}
-                        </td>
-                        <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-zinc-900">
-                          {s.userName}
-                        </td>
-                        <td className="whitespace-nowrap px-4 py-3 text-sm text-zinc-600">
-                          {s.shift.start.toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}{" "}
-                          –{" "}
-                          {s.shift.end.toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </td>
-                        <td className="whitespace-nowrap px-4 py-3 text-sm text-zinc-600">
-                          {s.clockInTime
-                            ? s.clockInTime.toLocaleTimeString([], {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })
-                            : "–"}
-                        </td>
-                        <td className="whitespace-nowrap px-4 py-3 text-right text-sm font-medium text-zinc-900">
-                          {formatHours(getHoursWorked(s))}
-                        </td>
-                      </tr>
-                    ))
+                    filteredShifts.map((s) => {
+                      const late = isClockInLate(s);
+                      return (
+                        <tr
+                          key={s.id}
+                          className={
+                            late
+                              ? "bg-red-50 hover:bg-red-100/80"
+                              : "hover:bg-zinc-50/50"
+                          }
+                        >
+                          <td className="whitespace-nowrap px-4 py-3 text-sm text-zinc-900">
+                            {new Date(s.date + "T12:00:00").toLocaleDateString(
+                              undefined,
+                              { weekday: "short", month: "short", day: "numeric", year: "numeric" }
+                            )}
+                          </td>
+                          <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-zinc-900">
+                            {s.userName}
+                          </td>
+                          <td className="whitespace-nowrap px-4 py-3 text-sm text-zinc-600">
+                            {s.shift.start.toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}{" "}
+                            –{" "}
+                            {s.shift.end.toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </td>
+                          <td
+                            className={
+                              late
+                                ? "whitespace-nowrap px-4 py-3 text-sm font-medium text-red-700"
+                                : "whitespace-nowrap px-4 py-3 text-sm text-zinc-600"
+                            }
+                          >
+                            {s.clockInTime
+                              ? s.clockInTime.toLocaleTimeString([], {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })
+                              : "–"}
+                          </td>
+                          <td className="whitespace-nowrap px-4 py-3 text-right text-sm font-medium text-zinc-900">
+                            {formatHours(getHoursWorked(s))}
+                          </td>
+                          <td className="whitespace-nowrap px-4 py-3 text-right">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingShiftId(s.id);
+                                setEditHoursInput(
+                                  getHoursWorked(s).toFixed(2)
+                                );
+                              }}
+                              className="text-sm font-medium text-zinc-600 underline hover:text-zinc-900"
+                            >
+                              Edit hours
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>
@@ -414,6 +461,88 @@ export default function StaffHoursPage() {
               )}
             </div>
           )}
+          {editingShiftId && (() => {
+            const shift = filteredShifts.find((s) => s.id === editingShiftId);
+            return (
+              <div
+                className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+                onClick={() => setEditingShiftId(null)}
+              >
+                <div
+                  className="w-full max-w-sm rounded-xl border border-zinc-200 bg-white p-5 shadow-lg"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {shift ? (
+                    <>
+                      <h3 className="text-sm font-semibold text-zinc-900">
+                        Edit hours — {new Date(shift.date + "T12:00:00").toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric", year: "numeric" })}
+                      </h3>
+                      <p className="mt-1 text-xs text-zinc-500">
+                        {shift.userName} · Computed: {formatHours(getHoursWorked(shift))}
+                        {shift.actualHours !== undefined && " (overridden)"}
+                      </p>
+                      <div className="mt-4">
+                        <label className="block text-sm font-medium text-zinc-700">
+                          Hours
+                        </label>
+                        <input
+                          type="number"
+                          min={0}
+                          step={0.25}
+                          value={editHoursInput}
+                          onChange={(e) => setEditHoursInput(e.target.value)}
+                          className="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
+                        />
+                      </div>
+                      <div className="mt-5 flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            const val = parseFloat(editHoursInput);
+                            if (!Number.isFinite(val) || val < 0) return;
+                            await updateShiftActualHours(editingShiftId, val);
+                            setEditingShiftId(null);
+                          }}
+                          className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800"
+                        >
+                          Save
+                        </button>
+                        <button
+                          type="button"
+                          disabled={shift.actualHours === undefined}
+                          onClick={async () => {
+                            await clearShiftActualHours(editingShiftId);
+                            setEditingShiftId(null);
+                          }}
+                          className="rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          Reset to calculated
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditingShiftId(null)}
+                          className="rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-sm text-zinc-600">Shift no longer in view.</p>
+                      <button
+                        type="button"
+                        onClick={() => setEditingShiftId(null)}
+                        className="mt-4 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800"
+                      >
+                        Close
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
         </>
       )}
     </div>
