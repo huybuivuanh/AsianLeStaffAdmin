@@ -208,22 +208,32 @@ export default function StaffHoursPage() {
                               isSelected
                                 ? "text-blue-100"
                                 : notClockedIn
-                                  ? "text-red-600 font-medium"
+                                  ? "text-zinc-600 font-medium"
                                   : clockedInLate
                                     ? "text-red-700"
                                     : "text-zinc-600"
                             }`}
                           >
-                            {statusText}
+                            {shiftTime}
                           </span>
                         )}
-                        <span
-                          className={`truncate text-xs leading-tight ${
-                            isSelected ? "text-blue-200" : "text-zinc-500"
-                          }`}
-                        >
-                          Clocked At: {clockInText}
-                        </span>
+                        {notClockedIn ? (
+                          <span
+                            className={`truncate text-sm font-medium ${
+                              isSelected ? "text-blue-200" : "text-red-600"
+                            }`}
+                          >
+                            Not Clocked In
+                          </span>
+                        ) : (
+                          <span
+                            className={`truncate text-sm font-medium ${
+                              isSelected ? "text-blue-200" : "text-zinc-600"
+                            }`}
+                          >
+                            Clocked In: {clockInText}
+                          </span>
+                        )}
                       </div>
                     )}
                   </button>
