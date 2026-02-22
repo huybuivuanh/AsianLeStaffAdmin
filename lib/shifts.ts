@@ -242,7 +242,6 @@ export async function updateShift(
     shiftStarts?: Date;
     shiftEnds?: Date;
     actualHours?: number;
-    status?: "scheduled" | "completed" | "cancelled";
   },
 ): Promise<void> {
   if (!clientDb) throw new Error("Database not configured");
@@ -252,6 +251,5 @@ export async function updateShift(
     updates.shiftStarts = toFirestoreTimestamp(data.shiftStarts);
   if (data.shiftEnds) updates.shiftEnds = toFirestoreTimestamp(data.shiftEnds);
   if (data.actualHours !== undefined) updates.actualHours = data.actualHours;
-  if (data.status) updates.status = data.status;
   await updateDoc(shiftRef, updates);
 }

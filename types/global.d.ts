@@ -21,7 +21,6 @@ declare global {
     date: string;
     clockInTime?: Date | null;
     actualHours?: number;
-    status?: "scheduled" | "completed" | "cancelled";
   }
 }
 

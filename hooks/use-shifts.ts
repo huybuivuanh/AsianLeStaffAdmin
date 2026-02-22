@@ -26,7 +26,6 @@ export function useShifts() {
             date: data.date as string,
             clockInTime: data.clockInTime?.toDate?.() ?? null,
             actualHours: data.actualHours as number | undefined,
-            status: data.status as Shift["status"],
           };
         });
         setShifts(list);
