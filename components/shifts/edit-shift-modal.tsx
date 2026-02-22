@@ -47,7 +47,6 @@ export function EditShiftModal({
   ]);
   const [startTime, setStartTime] = useState("08:00");
   const [endTime, setEndTime] = useState("16:00");
-  const [actualHoursOverride, setActualHoursOverride] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -70,7 +69,6 @@ export function EditShiftModal({
         setStartTime("08:00");
         setEndTime("16:00");
       }
-      setActualHoursOverride("");
       setError("");
     }
   }, [isOpen, users, initialDate, initialShifts]);
@@ -137,26 +135,13 @@ export function EditShiftModal({
       }
       const daysFilter =
         mode === "range" && selectedDays.length > 0 ? selectedDays : undefined;
-      const actualHours =
-        actualHoursOverride !== ""
-          ? parseFloat(actualHoursOverride)
-          : undefined;
-      if (
-        actualHours !== undefined &&
-        (Number.isNaN(actualHours) || actualHours < 0)
-      ) {
-        setError("Actual hours must be a non-negative number");
-        setSaving(false);
-        return;
-      }
       const count = await updateShiftsInRange(
         start,
         end,
         shiftStarts,
         shiftEnds,
         userId,
-        daysFilter,
-        actualHours
+        daysFilter
       );
       onSuccess();
       onClose();
@@ -335,25 +320,6 @@ export function EditShiftModal({
                 />
               </div>
             </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-zinc-700">
-              Actual hours (optional)
-            </label>
-            <p className="mt-1 text-xs text-zinc-500">
-              Override recorded hours for matching shifts (e.g. 8 or 8.5). Leave
-              empty to keep existing values.
-            </p>
-            <input
-              type="number"
-              min="0"
-              step="0.25"
-              placeholder="Leave empty"
-              value={actualHoursOverride}
-              onChange={(e) => setActualHoursOverride(e.target.value)}
-              className="mt-2 w-full rounded-lg border border-zinc-300 px-4 py-2.5 text-zinc-900 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
-            />
           </div>
 
           <div className="flex gap-3 pt-2">
