@@ -13,8 +13,7 @@ import {
 function isClockInLate(shift: Shift): boolean {
   if (!shift.clockInTime) return false;
   return (
-    shift.clockInTime.getTime() >
-    shift.shift.start.getTime() + 5 * 60 * 1000
+    shift.clockInTime.getTime() > shift.shift.start.getTime() + 5 * 60 * 1000
   );
 }
 
@@ -45,7 +44,10 @@ function getMonthOptions(count = 12): { value: string; label: string }[] {
   return Array.from({ length: count }, (_, i) => {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-    const label = d.toLocaleString("default", { month: "long", year: "numeric" });
+    const label = d.toLocaleString("default", {
+      month: "long",
+      year: "numeric",
+    });
     return { value, label };
   });
 }
@@ -94,7 +96,7 @@ export default function StaffHoursPage() {
   const effectiveUserId =
     selectedUserId && users.some((u) => u.id === selectedUserId)
       ? selectedUserId
-      : users[0]?.id ?? "";
+      : (users[0]?.id ?? "");
 
   const filteredShifts = useMemo(() => {
     if (!effectiveUserId) return [];
@@ -103,14 +105,14 @@ export default function StaffHoursPage() {
         (s) =>
           s.userId === effectiveUserId &&
           s.date >= effectiveStart &&
-          s.date <= effectiveEnd
+          s.date <= effectiveEnd,
       )
       .sort((a, b) => a.date.localeCompare(b.date));
   }, [shifts, effectiveUserId, effectiveStart, effectiveEnd]);
 
   const totalHours = useMemo(
     () => filteredShifts.reduce((sum, s) => sum + getHoursWorked(s), 0),
-    [filteredShifts]
+    [filteredShifts],
   );
 
   const byWeek = useMemo(() => {
@@ -130,42 +132,6 @@ export default function StaffHoursPage() {
     }
     return Object.entries(map).sort(([a], [b]) => a.localeCompare(b));
   }, [filteredShifts]);
-
-  function downloadCsv() {
-    const staffName = users.find((u) => u.id === effectiveUserId)?.name ?? "";
-    const rows: string[][] = [
-      ["Date", "Staff", "Shift start", "Shift end", "Clock-in", "Hours"],
-      ...filteredShifts.map((s) => [
-        s.date,
-        s.userName,
-        s.shift.start.toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-        s.shift.end.toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-        s.clockInTime
-          ? s.clockInTime.toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            })
-          : "",
-        getHoursWorked(s).toFixed(2),
-      ]),
-      [],
-      ["Total hours", "", "", "", "", totalHours.toFixed(2)],
-    ];
-    const csv = rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `staff-hours-${staffName.replace(/\s+/g, "-")}-${effectiveStart}-${effectiveEnd}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
 
   const selectedStaffName = users.find((u) => u.id === effectiveUserId)?.name;
 
@@ -276,14 +242,6 @@ export default function StaffHoursPage() {
             </div>
           </>
         )}
-        <button
-          type="button"
-          onClick={downloadCsv}
-          disabled={filteredShifts.length === 0}
-          className="rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          Download for payroll (CSV)
-        </button>
       </div>
 
       {!effectiveUserId ? (
@@ -340,7 +298,12 @@ export default function StaffHoursPage() {
                           <td className="whitespace-nowrap px-4 py-3 text-sm text-zinc-900">
                             {new Date(s.date + "T12:00:00").toLocaleDateString(
                               undefined,
-                              { weekday: "short", month: "short", day: "numeric", year: "numeric" }
+                              {
+                                weekday: "short",
+                                month: "short",
+                                day: "numeric",
+                                year: "numeric",
+                              },
                             )}
                           </td>
                           <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-zinc-900">
@@ -379,9 +342,7 @@ export default function StaffHoursPage() {
                               type="button"
                               onClick={() => {
                                 setEditingShiftId(s.id);
-                                setEditHoursInput(
-                                  getHoursWorked(s).toFixed(2)
-                                );
+                                setEditHoursInput(getHoursWorked(s).toFixed(2));
                               }}
                               className="text-sm font-medium text-zinc-600 underline hover:text-zinc-900"
                             >
@@ -407,7 +368,9 @@ export default function StaffHoursPage() {
                   {formatHours(totalHours)}
                 </p>
                 {selectedStaffName && (
-                  <p className="mt-1 text-xs text-zinc-500">{selectedStaffName}</p>
+                  <p className="mt-1 text-xs text-zinc-500">
+                    {selectedStaffName}
+                  </p>
                 )}
               </div>
               {byWeek.length > 0 && (
@@ -425,12 +388,10 @@ export default function StaffHoursPage() {
                           Week of{" "}
                           {new Date(week + "T12:00:00").toLocaleDateString(
                             undefined,
-                            { month: "short", day: "numeric", year: "numeric" }
+                            { month: "short", day: "numeric", year: "numeric" },
                           )}
                         </span>
-                        <span className="font-medium">
-                          {formatHours(h)}
-                        </span>
+                        <span className="font-medium">{formatHours(h)}</span>
                       </li>
                     ))}
                   </ul>
@@ -461,88 +422,100 @@ export default function StaffHoursPage() {
               )}
             </div>
           )}
-          {editingShiftId && (() => {
-            const shift = filteredShifts.find((s) => s.id === editingShiftId);
-            return (
-              <div
-                className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-                onClick={() => setEditingShiftId(null)}
-              >
+          {editingShiftId &&
+            (() => {
+              const shift = filteredShifts.find((s) => s.id === editingShiftId);
+              return (
                 <div
-                  className="w-full max-w-sm rounded-xl border border-zinc-200 bg-white p-5 shadow-lg"
-                  onClick={(e) => e.stopPropagation()}
+                  className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+                  onClick={() => setEditingShiftId(null)}
                 >
-                  {shift ? (
-                    <>
-                      <h3 className="text-sm font-semibold text-zinc-900">
-                        Edit hours — {new Date(shift.date + "T12:00:00").toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric", year: "numeric" })}
-                      </h3>
-                      <p className="mt-1 text-xs text-zinc-500">
-                        {shift.userName} · Computed: {formatHours(getHoursWorked(shift))}
-                        {shift.actualHours !== undefined && " (overridden)"}
-                      </p>
-                      <div className="mt-4">
-                        <label className="block text-sm font-medium text-zinc-700">
-                          Hours
-                        </label>
-                        <input
-                          type="number"
-                          min={0}
-                          step={0.25}
-                          value={editHoursInput}
-                          onChange={(e) => setEditHoursInput(e.target.value)}
-                          className="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
-                        />
-                      </div>
-                      <div className="mt-5 flex flex-wrap gap-2">
-                        <button
-                          type="button"
-                          onClick={async () => {
-                            const val = parseFloat(editHoursInput);
-                            if (!Number.isFinite(val) || val < 0) return;
-                            await updateShiftActualHours(editingShiftId, val);
-                            setEditingShiftId(null);
-                          }}
-                          className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800"
-                        >
-                          Save
-                        </button>
-                        <button
-                          type="button"
-                          disabled={shift.actualHours === undefined}
-                          onClick={async () => {
-                            await clearShiftActualHours(editingShiftId);
-                            setEditingShiftId(null);
-                          }}
-                          className="rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                          Reset to calculated
-                        </button>
+                  <div
+                    className="w-full max-w-sm rounded-xl border border-zinc-200 bg-white p-5 shadow-lg"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {shift ? (
+                      <>
+                        <h3 className="text-sm font-semibold text-zinc-900">
+                          Edit hours —{" "}
+                          {new Date(
+                            shift.date + "T12:00:00",
+                          ).toLocaleDateString(undefined, {
+                            weekday: "short",
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                          })}
+                        </h3>
+                        <p className="mt-1 text-xs text-zinc-500">
+                          {shift.userName} · Computed:{" "}
+                          {formatHours(getHoursWorked(shift))}
+                          {shift.actualHours !== undefined && " (overridden)"}
+                        </p>
+                        <div className="mt-4">
+                          <label className="block text-sm font-medium text-zinc-700">
+                            Hours
+                          </label>
+                          <input
+                            type="number"
+                            min={0}
+                            step={0.25}
+                            value={editHoursInput}
+                            onChange={(e) => setEditHoursInput(e.target.value)}
+                            className="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
+                          />
+                        </div>
+                        <div className="mt-5 flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              const val = parseFloat(editHoursInput);
+                              if (!Number.isFinite(val) || val < 0) return;
+                              await updateShiftActualHours(editingShiftId, val);
+                              setEditingShiftId(null);
+                            }}
+                            className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800"
+                          >
+                            Save
+                          </button>
+                          <button
+                            type="button"
+                            disabled={shift.actualHours === undefined}
+                            onClick={async () => {
+                              await clearShiftActualHours(editingShiftId);
+                              setEditingShiftId(null);
+                            }}
+                            className="rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            Reset to calculated
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setEditingShiftId(null)}
+                            className="rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-sm text-zinc-600">
+                          Shift no longer in view.
+                        </p>
                         <button
                           type="button"
                           onClick={() => setEditingShiftId(null)}
-                          className="rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
+                          className="mt-4 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800"
                         >
-                          Cancel
+                          Close
                         </button>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <p className="text-sm text-zinc-600">Shift no longer in view.</p>
-                      <button
-                        type="button"
-                        onClick={() => setEditingShiftId(null)}
-                        className="mt-4 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800"
-                      >
-                        Close
-                      </button>
-                    </>
-                  )}
+                      </>
+                    )}
+                  </div>
                 </div>
-              </div>
-            );
-          })()}
+              );
+            })()}
         </>
       )}
     </div>
