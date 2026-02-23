@@ -20,6 +20,7 @@ export function UserModal({
 }: UserModalProps) {
   const [name, setName] = useState("");
   const [pin, setPin] = useState("");
+  const [server, setServer] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -28,9 +29,11 @@ export function UserModal({
       if (mode === "edit" && user) {
         setName(user.name);
         setPin(user.pin);
+        setServer(user.server);
       } else {
         setName("");
         setPin("");
+        setServer(false);
       }
       setError("");
     }
@@ -59,9 +62,9 @@ export function UserModal({
       }
 
       if (mode === "add") {
-        await addUser(nameVal, pinVal);
+        await addUser(nameVal, pinVal, server);
       } else if (user) {
-        await updateUser(user.id, nameVal, pinVal);
+        await updateUser(user.id, nameVal, pinVal, server);
       }
       onSuccess();
       onClose();
@@ -126,6 +129,17 @@ export function UserModal({
               placeholder="4 digits"
               className="mt-1 w-full rounded-lg border border-zinc-300 px-4 py-2.5 font-mono text-zinc-900 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
             />
+          </div>
+          <div>
+            <label className="flex cursor-pointer items-center gap-2">
+              <input
+                type="checkbox"
+                checked={server}
+                onChange={(e) => setServer(e.target.checked)}
+                className="rounded border-zinc-300 text-zinc-900 focus:ring-zinc-500"
+              />
+              <span className="text-sm font-medium text-zinc-700">Server</span>
+            </label>
           </div>
           <div className="flex gap-3 pt-2">
             <button

@@ -70,6 +70,9 @@ export default function UsersPage() {
                     PIN
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-500">
+                    Server
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-500">
                     Created
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-zinc-500">
@@ -88,6 +91,26 @@ export default function UsersPage() {
                     </td>
                     <td className="px-4 py-3 text-sm font-mono text-zinc-600">
                       {user.pin}
+                    </td>
+                    <td className="px-4 py-3 text-sm">
+                      {user.server ? (
+                        <span className="text-blue-600" aria-label="Server">
+                          <svg
+                            className="inline h-5 w-5"
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                            aria-hidden
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
+                        </span>
+                      ) : (
+                        <span className="text-zinc-300">—</span>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-sm text-zinc-600">
                       {user.createdAt instanceof Date
