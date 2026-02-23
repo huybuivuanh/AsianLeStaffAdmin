@@ -1,13 +1,15 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useUsers } from "@/hooks/use-users";
 import { useShifts } from "@/hooks/use-shifts";
 import { AddShiftModal } from "@/components/shifts/add-shift-modal";
 import { DeleteShiftModal } from "@/components/shifts/delete-shift-modal";
 import { EditShiftModal } from "@/components/shifts/edit-shift-modal";
+import { AddTipsModal } from "@/components/tips/add-tips-modal";
 import { toDateKey, getDaysInMonth, formatHours } from "@/lib/utils";
 import { getHoursWorked } from "@/lib/shifts";
+import { getTipsForDate } from "@/lib/tips";
 
 export default function StaffHoursPage() {
   const users = useUsers();
@@ -18,6 +20,24 @@ export default function StaffHoursPage() {
   const [addShiftModalOpen, setAddShiftModalOpen] = useState(false);
   const [deleteShiftModalOpen, setDeleteShiftModalOpen] = useState(false);
   const [editShiftModalOpen, setEditShiftModalOpen] = useState(false);
+  const [addTipsModalOpen, setAddTipsModalOpen] = useState(false);
+  const [tipsByDate, setTipsByDate] = useState<Record<string, Tips | null>>({});
+
+  useEffect(() => {
+    if (!selectedDate) return;
+    let cancelled = false;
+    getTipsForDate(selectedDate).then((tips) => {
+      if (!cancelled)
+        setTipsByDate((prev) => ({ ...prev, [selectedDate]: tips }));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedDate]);
+
+  const tipsForSelectedDate = selectedDate
+    ? (tipsByDate[selectedDate] ?? null)
+    : null;
 
   const effectiveUserId =
     selectedUserId && users.some((u) => u.id === selectedUserId)
@@ -66,17 +86,9 @@ export default function StaffHoursPage() {
 
   return (
     <div>
-      <div>
-        <h1 className="text-2xl font-semibold text-zinc-900">Staff Schedule</h1>
-        <p className="mt-2 text-zinc-600">View schedule by staff member.</p>
-      </div>
-
       <div className="mt-6">
         <div className="flex flex-wrap items-center gap-4">
           <div>
-            <label className="block text-sm font-medium text-zinc-700">
-              Staff
-            </label>
             <select
               value={effectiveUserId}
               onChange={(e) => setSelectedUserId(e.target.value)}
@@ -94,6 +106,36 @@ export default function StaffHoursPage() {
               ))}
             </select>
           </div>
+          <div className="flex items-end">
+            <button
+              type="button"
+              onClick={() => setAddTipsModalOpen(true)}
+              disabled={!selectedDate}
+              className="rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Add Tips
+            </button>
+          </div>
+          {selectedDate && (
+            <div className="flex items-center gap-4 rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-2.5 text-sm">
+              <span className="font-medium text-zinc-500">Tips:</span>
+              <span className="text-zinc-700">
+                AM cash ${(tipsForSelectedDate?.morningCash ?? 0).toFixed(2)}
+              </span>
+              <span className="text-zinc-700">
+                AM card ${(tipsForSelectedDate?.morningCard ?? 0).toFixed(2)}
+              </span>
+              <span className="text-zinc-700">
+                PM cash ${(tipsForSelectedDate?.afternoonCash ?? 0).toFixed(2)}
+              </span>
+              <span className="text-zinc-700">
+                PM card ${(tipsForSelectedDate?.afternoonCard ?? 0).toFixed(2)}
+              </span>
+              <span className="font-semibold text-zinc-900">
+                Total ${(tipsForSelectedDate?.total ?? 0).toFixed(2)}
+              </span>
+            </div>
+          )}
         </div>
 
         <div className="mt-4 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-md">
@@ -363,6 +405,18 @@ export default function StaffHoursPage() {
         initialDate={selectedDate}
         onClose={() => setDeleteShiftModalOpen(false)}
         onSuccess={() => {}}
+      />
+      <AddTipsModal
+        isOpen={addTipsModalOpen}
+        selectedDate={selectedDate}
+        onClose={() => setAddTipsModalOpen(false)}
+        onSuccess={() => {
+          if (selectedDate) {
+            getTipsForDate(selectedDate).then((tips) =>
+              setTipsByDate((prev) => ({ ...prev, [selectedDate]: tips })),
+            );
+          }
+        }}
       />
     </div>
   );
