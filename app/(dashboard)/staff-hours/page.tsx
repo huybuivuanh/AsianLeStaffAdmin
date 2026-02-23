@@ -115,22 +115,35 @@ export default function StaffHoursPage() {
     [filteredShifts],
   );
 
+  const totalTips = useMemo(
+    () => filteredShifts.reduce((sum, s) => sum + (s.tips ?? 0), 0),
+    [filteredShifts],
+  );
+
   const byWeek = useMemo(() => {
-    const map: Record<string, number> = {};
+    const hoursMap: Record<string, number> = {};
+    const tipsMap: Record<string, number> = {};
     for (const s of filteredShifts) {
       const week = getWeekKey(s.date);
-      map[week] = (map[week] ?? 0) + getHoursWorked(s);
+      hoursMap[week] = (hoursMap[week] ?? 0) + getHoursWorked(s);
+      tipsMap[week] = (tipsMap[week] ?? 0) + (s.tips ?? 0);
     }
-    return Object.entries(map).sort(([a], [b]) => a.localeCompare(b));
+    return Object.entries(hoursMap)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([week, h]) => [week, h, tipsMap[week] ?? 0] as const);
   }, [filteredShifts]);
 
   const byMonth = useMemo(() => {
-    const map: Record<string, number> = {};
+    const hoursMap: Record<string, number> = {};
+    const tipsMap: Record<string, number> = {};
     for (const s of filteredShifts) {
       const month = s.date.slice(0, 7);
-      map[month] = (map[month] ?? 0) + getHoursWorked(s);
+      hoursMap[month] = (hoursMap[month] ?? 0) + getHoursWorked(s);
+      tipsMap[month] = (tipsMap[month] ?? 0) + (s.tips ?? 0);
     }
-    return Object.entries(map).sort(([a], [b]) => a.localeCompare(b));
+    return Object.entries(hoursMap)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([month, h]) => [month, h, tipsMap[month] ?? 0] as const);
   }, [filteredShifts]);
 
   const selectedStaffName = users.find((u) => u.id === effectiveUserId)?.name;
@@ -272,6 +285,9 @@ export default function StaffHoursPage() {
                       Hours
                     </th>
                     <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-zinc-600">
+                      Tips
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-zinc-600">
                       Actions
                     </th>
                   </tr>
@@ -280,7 +296,7 @@ export default function StaffHoursPage() {
                   {filteredShifts.length === 0 ? (
                     <tr>
                       <td
-                        colSpan={7}
+                        colSpan={8}
                         className="px-4 py-8 text-center text-sm text-zinc-500"
                       >
                         No shifts in this range.
@@ -345,6 +361,9 @@ export default function StaffHoursPage() {
                           <td className="whitespace-nowrap px-4 py-3 text-right text-sm font-medium text-zinc-900">
                             {formatHours(getHoursWorked(s))}
                           </td>
+                          <td className="whitespace-nowrap px-4 py-3 text-right text-sm text-zinc-600">
+                            ${(s.tips ?? 0).toFixed(2)}
+                          </td>
                           <td className="whitespace-nowrap px-4 py-3 text-right">
                             <button
                               type="button"
@@ -375,6 +394,9 @@ export default function StaffHoursPage() {
                 <p className="mt-2 text-2xl font-semibold text-zinc-900">
                   {formatHours(totalHours)}
                 </p>
+                <p className="mt-1 text-lg font-medium text-zinc-700">
+                  Tips: ${totalTips.toFixed(2)}
+                </p>
                 {selectedStaffName && (
                   <p className="mt-1 text-xs text-zinc-500">
                     {selectedStaffName}
@@ -387,7 +409,7 @@ export default function StaffHoursPage() {
                     By week
                   </h3>
                   <ul className="mt-2 space-y-1 text-sm">
-                    {byWeek.map(([week, h]) => (
+                    {byWeek.map(([week, h, tips]) => (
                       <li
                         key={week}
                         className="flex justify-between text-zinc-700"
@@ -399,7 +421,9 @@ export default function StaffHoursPage() {
                             { month: "short", day: "numeric", year: "numeric" },
                           )}
                         </span>
-                        <span className="font-medium">{formatHours(h)}</span>
+                        <span>
+                          {formatHours(h)} - Tips: ${tips.toFixed(2)}
+                        </span>
                       </li>
                     ))}
                   </ul>
@@ -411,7 +435,7 @@ export default function StaffHoursPage() {
                     By month
                   </h3>
                   <ul className="mt-2 flex flex-wrap gap-4 text-sm">
-                    {byMonth.map(([month, h]) => (
+                    {byMonth.map(([month, h, tips]) => (
                       <li
                         key={month}
                         className="flex justify-between gap-2 text-zinc-700"
@@ -422,7 +446,9 @@ export default function StaffHoursPage() {
                             year: "numeric",
                           })}
                         </span>
-                        <span className="font-medium">{formatHours(h)}</span>
+                        <span className="font-medium">
+                          {formatHours(h)} - Tips: ${tips.toFixed(2)}
+                        </span>
                       </li>
                     ))}
                   </ul>
