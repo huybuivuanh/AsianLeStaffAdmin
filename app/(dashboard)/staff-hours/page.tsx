@@ -117,35 +117,26 @@ export default function StaffHoursPage() {
     [filteredShifts],
   );
 
-  const totalTips = useMemo(
-    () => filteredShifts.reduce((sum, s) => sum + (s.tips ?? 0), 0),
-    [filteredShifts],
-  );
-
   const byWeek = useMemo(() => {
     const hoursMap: Record<string, number> = {};
-    const tipsMap: Record<string, number> = {};
     for (const s of filteredShifts) {
       const week = getWeekKey(s.date);
       hoursMap[week] = (hoursMap[week] ?? 0) + getHoursWorked(s);
-      tipsMap[week] = (tipsMap[week] ?? 0) + (s.tips ?? 0);
     }
     return Object.entries(hoursMap)
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([week, h]) => [week, h, tipsMap[week] ?? 0] as const);
+      .map(([week, h]) => [week, h] as const);
   }, [filteredShifts]);
 
   const byMonth = useMemo(() => {
     const hoursMap: Record<string, number> = {};
-    const tipsMap: Record<string, number> = {};
     for (const s of filteredShifts) {
       const month = s.date.slice(0, 7);
       hoursMap[month] = (hoursMap[month] ?? 0) + getHoursWorked(s);
-      tipsMap[month] = (tipsMap[month] ?? 0) + (s.tips ?? 0);
     }
     return Object.entries(hoursMap)
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([month, h]) => [month, h, tipsMap[month] ?? 0] as const);
+      .map(([month, h]) => [month, h] as const);
   }, [filteredShifts]);
 
   const selectedStaffName = users.find((u) => u.id === effectiveUserId)?.name;
@@ -492,9 +483,6 @@ export default function StaffHoursPage() {
                 <p className="mt-2 text-2xl font-semibold text-zinc-900">
                   {formatHours(totalHours)}
                 </p>
-                <p className="mt-1 text-lg font-medium text-zinc-700">
-                  Tips: ${totalTips.toFixed(2)}
-                </p>
                 {selectedStaffName && (
                   <p className="mt-1 text-xs text-zinc-500">
                     {selectedStaffName}
@@ -507,7 +495,7 @@ export default function StaffHoursPage() {
                     By week
                   </h3>
                   <ul className="mt-2 space-y-1 text-sm">
-                    {byWeek.map(([week, h, tips]) => (
+                    {byWeek.map(([week, h]) => (
                       <li
                         key={week}
                         className="flex justify-between text-zinc-700"
@@ -519,9 +507,7 @@ export default function StaffHoursPage() {
                             { month: "short", day: "numeric", year: "numeric" },
                           )}
                         </span>
-                        <span>
-                          {formatHours(h)} - Tips: ${tips.toFixed(2)}
-                        </span>
+                        <span>{formatHours(h)}</span>
                       </li>
                     ))}
                   </ul>
@@ -533,7 +519,7 @@ export default function StaffHoursPage() {
                     By month
                   </h3>
                   <ul className="mt-2 flex flex-wrap gap-4 text-sm">
-                    {byMonth.map(([month, h, tips]) => (
+                    {byMonth.map(([month, h]) => (
                       <li
                         key={month}
                         className="flex justify-between gap-2 text-zinc-700"
@@ -544,9 +530,7 @@ export default function StaffHoursPage() {
                             year: "numeric",
                           })}
                         </span>
-                        <span className="font-medium">
-                          {formatHours(h)} - Tips: ${tips.toFixed(2)}
-                        </span>
+                        <span className="font-medium">{formatHours(h)}</span>
                       </li>
                     ))}
                   </ul>

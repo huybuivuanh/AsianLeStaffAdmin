@@ -10,6 +10,7 @@ const navItems = [
   { href: "/users", label: "Users" },
   { href: "/staff-schedule", label: "Staff Schedule" },
   { href: "/staff-hours", label: "Staff Hours" },
+  { href: "/tips", label: "Tips" },
 ] as const;
 
 export function Navbar() {
