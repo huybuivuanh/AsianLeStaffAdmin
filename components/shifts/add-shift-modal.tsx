@@ -27,6 +27,8 @@ interface AddShiftModalProps {
   isOpen: boolean;
   users: User[];
   initialDate?: string | null;
+  /** When set, use this staff and hide the staff selector (e.g. from staff schedule). */
+  selectedUserId?: string | null;
   onClose: () => void;
   onSuccess: () => void;
 }
@@ -35,6 +37,7 @@ export function AddShiftModal({
   isOpen,
   users,
   initialDate = null,
+  selectedUserId: selectedUserIdProp = null,
   onClose,
   onSuccess,
 }: AddShiftModalProps) {
@@ -60,14 +63,18 @@ export function AddShiftModal({
 
   useEffect(() => {
     if (isOpen) {
-      setUserId(users[0]?.id ?? "");
+      setUserId(
+        selectedUserIdProp && users.some((u) => u.id === selectedUserIdProp)
+          ? selectedUserIdProp
+          : (users[0]?.id ?? ""),
+      );
       const defaultDate = initialDate ?? toDateKey(new Date());
       setDate(defaultDate);
       setStartDate(defaultDate);
       setEndDate(defaultDate);
       setError("");
     }
-  }, [isOpen, users, initialDate]);
+  }, [isOpen, users, initialDate, selectedUserIdProp]);
 
   useEffect(() => {
     function handleEscape(e: KeyboardEvent) {
@@ -213,28 +220,36 @@ export function AddShiftModal({
             </div>
           )}
 
-          <div>
-            <label className="block text-sm font-medium text-zinc-700">
-              Staff
-            </label>
-            <select
-              value={userId}
-              onChange={(e) => setUserId(e.target.value)}
-              required
-              className="mt-1 w-full rounded-lg border border-zinc-300 px-4 py-2.5 text-zinc-900 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
-            >
-              {users.length === 0 ? (
-                <option value="" disabled>
-                  No staff
-                </option>
-              ) : null}
-              {users.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          {selectedUserIdProp == null ? (
+            <div>
+              <label className="block text-sm font-medium text-zinc-700">
+                Staff
+              </label>
+              <select
+                value={userId}
+                onChange={(e) => setUserId(e.target.value)}
+                required
+                className="mt-1 w-full rounded-lg border border-zinc-300 px-4 py-2.5 text-zinc-900 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
+              >
+                {users.length === 0 ? (
+                  <option value="" disabled>
+                    No staff
+                  </option>
+                ) : null}
+                {users.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : (
+            <div>
+              <p className="mt-1 text-zinc-900">
+                {users.find((u) => u.id === userId)?.name ?? "—"}
+              </p>
+            </div>
+          )}
 
           <div className="flex gap-4">
             <label className="flex cursor-pointer items-center gap-2">

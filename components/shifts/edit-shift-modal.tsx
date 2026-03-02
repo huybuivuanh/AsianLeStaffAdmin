@@ -25,6 +25,8 @@ interface EditShiftModalProps {
   users: User[];
   initialDate?: string | null;
   initialShifts?: Shift[];
+  /** When set, use this staff and hide the staff selector (e.g. from staff schedule). */
+  selectedUserId?: string | null;
   onClose: () => void;
   onSuccess: () => void;
 }
@@ -34,6 +36,7 @@ export function EditShiftModal({
   users,
   initialDate = null,
   initialShifts = [],
+  selectedUserId: selectedUserIdProp = null,
   onClose,
   onSuccess,
 }: EditShiftModalProps) {
@@ -55,7 +58,10 @@ export function EditShiftModal({
 
   useEffect(() => {
     if (isOpen) {
-      const defaultUserId = users[0]?.id ?? "";
+      const defaultUserId =
+        selectedUserIdProp && users.some((u) => u.id === selectedUserIdProp)
+          ? selectedUserIdProp
+          : (users[0]?.id ?? "");
       setUserId(defaultUserId);
       const defaultDate = initialDate ?? toDateKey(new Date());
       setDate(defaultDate);
@@ -63,7 +69,7 @@ export function EditShiftModal({
       setEndDate(defaultDate);
       setSelectedDays([0, 1, 2, 3, 4, 5, 6]);
       const shift = initialShifts.find(
-        (s) => s.userId === defaultUserId && s.date === defaultDate
+        (s) => s.userId === defaultUserId && s.date === defaultDate,
       );
       if (shift) {
         setStartTime(toTimeStr(shift.shift.start));
@@ -86,13 +92,13 @@ export function EditShiftModal({
       }
       setError("");
     }
-  }, [isOpen, users, initialDate, initialShifts]);
+  }, [isOpen, users, initialDate, initialShifts, selectedUserIdProp]);
 
   function handleUserIdChange(newUserId: string) {
     setUserId(newUserId);
     if (initialDate && initialShifts.length > 0) {
       const shift = initialShifts.find(
-        (s) => s.userId === newUserId && s.date === initialDate
+        (s) => s.userId === newUserId && s.date === initialDate,
       );
       if (shift) {
         setStartTime(toTimeStr(shift.shift.start));
@@ -126,7 +132,7 @@ export function EditShiftModal({
 
   function toggleDay(day: number) {
     setSelectedDays((prev) =>
-      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
+      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day],
     );
   }
 
@@ -176,7 +182,7 @@ export function EditShiftModal({
         userId,
         daysFilter,
         undefined,
-        breakRange
+        breakRange,
       );
       onSuccess();
       onClose();
@@ -215,26 +221,36 @@ export function EditShiftModal({
             </div>
           )}
 
-          <div>
-            <label className="block text-sm font-medium text-zinc-700">
-              Staff
-            </label>
-            <select
-              value={userId}
-              onChange={(e) => handleUserIdChange(e.target.value)}
-              required
-              className="mt-1 w-full rounded-lg border border-zinc-300 px-4 py-2.5 text-zinc-900 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
-            >
-              {users.length === 0 ? (
-                <option value="" disabled>No staff</option>
-              ) : null}
-              {users.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          {selectedUserIdProp == null ? (
+            <div>
+              <label className="block text-sm font-medium text-zinc-700">
+                Staff
+              </label>
+              <select
+                value={userId}
+                onChange={(e) => handleUserIdChange(e.target.value)}
+                required
+                className="mt-1 w-full rounded-lg border border-zinc-300 px-4 py-2.5 text-zinc-900 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
+              >
+                {users.length === 0 ? (
+                  <option value="" disabled>
+                    No staff
+                  </option>
+                ) : null}
+                {users.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : (
+            <div>
+              <p className="mt-1 text-zinc-900">
+                {users.find((u) => u.id === userId)?.name ?? "—"}
+              </p>
+            </div>
+          )}
 
           <div className="flex gap-4">
             <label className="flex cursor-pointer items-center gap-2">
@@ -365,7 +381,9 @@ export function EditShiftModal({
                 onChange={(e) => setNoBreak(e.target.checked)}
                 className="rounded text-zinc-900"
               />
-              <span className="text-sm font-medium text-zinc-700">No break</span>
+              <span className="text-sm font-medium text-zinc-700">
+                No break
+              </span>
             </label>
             {!noBreak && (
               <div className="mt-2 grid grid-cols-2 gap-4">

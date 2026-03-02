@@ -394,6 +394,7 @@ export default function StaffHoursPage() {
         isOpen={addShiftModalOpen}
         users={users}
         initialDate={selectedDate}
+        selectedUserId={effectiveUserId}
         onClose={() => setAddShiftModalOpen(false)}
         onSuccess={() => {}}
       />
@@ -404,6 +405,7 @@ export default function StaffHoursPage() {
         initialShifts={
           selectedDate ? shifts.filter((s) => s.date === selectedDate) : []
         }
+        selectedUserId={effectiveUserId}
         onClose={() => setEditShiftModalOpen(false)}
         onSuccess={() => {}}
       />
@@ -411,6 +413,7 @@ export default function StaffHoursPage() {
         isOpen={deleteShiftModalOpen}
         users={users}
         initialDate={selectedDate}
+        selectedUserId={effectiveUserId}
         onClose={() => setDeleteShiftModalOpen(false)}
         onSuccess={() => {}}
       />
