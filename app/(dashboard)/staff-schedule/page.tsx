@@ -403,7 +403,11 @@ export default function StaffHoursPage() {
         users={users}
         initialDate={selectedDate}
         initialShifts={
-          selectedDate ? shifts.filter((s) => s.date === selectedDate) : []
+          selectedDate && effectiveUserId
+            ? shifts.filter(
+                (s) => s.date === selectedDate && s.userId === effectiveUserId,
+              )
+            : []
         }
         selectedUserId={effectiveUserId}
         onClose={() => setEditShiftModalOpen(false)}

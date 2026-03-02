@@ -68,9 +68,10 @@ export function EditShiftModal({
       setStartDate(defaultDate);
       setEndDate(defaultDate);
       setSelectedDays([0, 1, 2, 3, 4, 5, 6]);
-      const shift = initialShifts.find(
-        (s) => s.userId === defaultUserId && s.date === defaultDate,
-      );
+      const shift =
+        initialShifts.find(
+          (s) => s.userId === defaultUserId && s.date === defaultDate,
+        ) ?? initialShifts.find((s) => s.userId === defaultUserId);
       if (shift) {
         setStartTime(toTimeStr(shift.shift.start));
         setEndTime(toTimeStr(shift.shift.end));
@@ -97,9 +98,10 @@ export function EditShiftModal({
   function handleUserIdChange(newUserId: string) {
     setUserId(newUserId);
     if (initialDate && initialShifts.length > 0) {
-      const shift = initialShifts.find(
-        (s) => s.userId === newUserId && s.date === initialDate,
-      );
+      const shift =
+        initialShifts.find(
+          (s) => s.userId === newUserId && s.date === initialDate,
+        ) ?? initialShifts.find((s) => s.userId === newUserId);
       if (shift) {
         setStartTime(toTimeStr(shift.shift.start));
         setEndTime(toTimeStr(shift.shift.end));
