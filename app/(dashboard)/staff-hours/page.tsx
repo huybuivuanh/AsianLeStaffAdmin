@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { useUsers } from "@/hooks/use-users";
 import { useShifts } from "@/hooks/use-shifts";
-import { toDateKey, formatHours, formatTimeShort } from "@/lib/utils";
+import { toDateKey, formatHours, formatTimeShort, getDaysInMonth } from "@/lib/utils";
 import {
   getHoursWorked,
   updateShiftActualHours,
@@ -84,6 +84,8 @@ export default function StaffHoursPage() {
     d.setDate(d.getDate() - d.getDay());
     return toDateKey(d);
   });
+  const [viewDate, setViewDate] = useState(() => new Date());
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [editingShiftId, setEditingShiftId] = useState<string | null>(null);
   const [editHoursInput, setEditHoursInput] = useState("");
 
@@ -147,6 +149,52 @@ export default function StaffHoursPage() {
   }, [filteredShifts]);
 
   const selectedStaffName = users.find((u) => u.id === effectiveUserId)?.name;
+
+  const viewMonthStart = useMemo(() => {
+    const d = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
+    return toDateKey(d);
+  }, [viewDate]);
+  const viewMonthEnd = useMemo(() => {
+    const d = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 0);
+    return toDateKey(d);
+  }, [viewDate]);
+
+  const calendarShifts = useMemo(() => {
+    if (!effectiveUserId) return [];
+    return shifts
+      .filter(
+        (s) =>
+          s.userId === effectiveUserId &&
+          s.date >= viewMonthStart &&
+          s.date <= viewMonthEnd,
+      )
+      .sort((a, b) => a.date.localeCompare(b.date));
+  }, [shifts, effectiveUserId, viewMonthStart, viewMonthEnd]);
+
+  const shiftsByDateCalendar = useMemo(() => {
+    const map: Record<string, Shift[]> = {};
+    for (const s of calendarShifts) {
+      if (!map[s.date]) map[s.date] = [];
+      map[s.date].push(s);
+    }
+    return map;
+  }, [calendarShifts]);
+
+  const monthStart = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
+  const todayKey = toDateKey(new Date());
+  const calendarDays = getDaysInMonth(
+    viewDate.getFullYear(),
+    viewDate.getMonth(),
+  );
+  const weekStart = monthStart.getDay();
+  const padding = Array(weekStart).fill(null);
+
+  function prevMonth() {
+    setViewDate((d) => new Date(d.getFullYear(), d.getMonth() - 1));
+  }
+  function nextMonth() {
+    setViewDate((d) => new Date(d.getFullYear(), d.getMonth() + 1));
+  }
 
   return (
     <div>
@@ -261,117 +309,177 @@ export default function StaffHoursPage() {
         <p className="mt-6 text-sm text-zinc-500">Add staff to see hours.</p>
       ) : (
         <>
-          <div className="mt-6 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-zinc-200">
-                <thead className="bg-zinc-50">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-600">
-                      Date
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-600">
-                      Staff
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-600">
-                      Shift
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-600">
-                      Clock-in
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-600">
-                      Break
-                    </th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-zinc-600">
-                      Hours
-                    </th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-zinc-600">
-                      Tips
-                    </th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-zinc-600">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-zinc-100 bg-white">
-                  {filteredShifts.length === 0 ? (
-                    <tr>
-                      <td
-                        colSpan={8}
-                        className="px-4 py-8 text-center text-sm text-zinc-500"
-                      >
-                        No shifts in this range.
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredShifts.map((s) => {
-                      const late = isClockInLate(s);
-                      return (
-                        <tr
-                          key={s.id}
-                          className={
-                            late
-                              ? "bg-red-50 hover:bg-red-100/80"
-                              : "hover:bg-zinc-50/50"
-                          }
-                        >
-                          <td className="whitespace-nowrap px-4 py-3 text-sm text-zinc-900">
-                            {new Date(s.date + "T12:00:00").toLocaleDateString(
-                              undefined,
-                              {
-                                weekday: "short",
-                                month: "short",
-                                day: "numeric",
-                                year: "numeric",
-                              },
-                            )}
-                          </td>
-                          <td className="whitespace-nowrap px-4 py-3 text-sm font-medium text-zinc-900">
-                            {s.userName}
-                          </td>
-                          <td className="whitespace-nowrap px-4 py-3 text-sm text-zinc-600">
-                            {formatTimeShort(s.shift.start)} –{" "}
-                            {formatTimeShort(s.shift.end)}
-                          </td>
-                          <td
-                            className={
-                              late
-                                ? "whitespace-nowrap px-4 py-3 text-sm font-medium text-red-700"
-                                : "whitespace-nowrap px-4 py-3 text-sm text-zinc-600"
-                            }
-                          >
-                            {s.clockInTime
-                              ? formatTimeShort(s.clockInTime)
-                              : "–"}
-                          </td>
-                          <td className="whitespace-nowrap px-4 py-3 text-sm text-zinc-600">
-                            {s.break
-                              ? `${formatTimeShort(s.break.start)} – ${formatTimeShort(s.break.end)}`
-                              : "–"}
-                          </td>
-                          <td className="whitespace-nowrap px-4 py-3 text-right text-sm font-medium text-zinc-900">
-                            {formatHours(getHoursWorked(s))}
-                          </td>
-                          <td className="whitespace-nowrap px-4 py-3 text-right text-sm text-zinc-600">
-                            ${(s.tips ?? 0).toFixed(2)}
-                          </td>
-                          <td className="whitespace-nowrap px-4 py-3 text-right">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setEditingShiftId(s.id);
-                                setEditHoursInput(getHoursWorked(s).toFixed(2));
-                              }}
-                              className="text-sm font-medium text-zinc-600 underline hover:text-zinc-900"
+          <div className="mt-6 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-md">
+            <div className="flex items-center justify-between border-b border-zinc-100 bg-zinc-50/80 px-5 py-4">
+              <button
+                type="button"
+                onClick={prevMonth}
+                className="flex h-9 w-9 items-center justify-center rounded-lg text-zinc-600 transition-colors hover:bg-zinc-200 hover:text-zinc-900"
+                aria-label="Previous month"
+              >
+                <svg
+                  className="h-5 w-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 19l-7-7 7-7"
+                  />
+                </svg>
+              </button>
+              <span className="text-lg font-semibold tracking-tight text-zinc-800">
+                {viewDate.toLocaleString("default", {
+                  month: "long",
+                  year: "numeric",
+                })}
+              </span>
+              <button
+                type="button"
+                onClick={nextMonth}
+                className="flex h-9 w-9 items-center justify-center rounded-lg text-zinc-600 transition-colors hover:bg-zinc-200 hover:text-zinc-900"
+                aria-label="Next month"
+              >
+                <svg
+                  className="h-5 w-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5l7 7-7 7"
+                  />
+                </svg>
+              </button>
+            </div>
+            <div className="p-4">
+              <div className="grid grid-cols-7 gap-px rounded-lg bg-zinc-100 p-px">
+                {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
+                  <div
+                    key={d}
+                    className="rounded-sm bg-zinc-50 py-2.5 text-center text-xs font-semibold uppercase tracking-wider text-zinc-500"
+                  >
+                    {d}
+                  </div>
+                ))}
+                {padding.map((_, i) => (
+                  <div key={`pad-${i}`} className="aspect-[4/3]" />
+                ))}
+                {calendarDays.map((d) => {
+                  const key = toDateKey(d);
+                  const dayShifts = shiftsByDateCalendar[key] ?? [];
+                  const shift = dayShifts[0];
+                  const isSelected = selectedDate === key;
+                  const isToday = key === todayKey;
+                  const isPast = key < todayKey;
+                  const clockedInLate =
+                    shift?.clockInTime &&
+                    shift.clockInTime.getTime() >
+                      shift.shift.start.getTime() + 5 * 60 * 1000;
+                  const notClockedIn = shift && !shift.clockInTime && isPast;
+                  const shiftTime = shift
+                    ? `${formatTimeShort(shift.shift.start)}–${formatTimeShort(shift.shift.end)}`
+                    : null;
+                  const clockInText = shift?.clockInTime
+                    ? formatTimeShort(shift.clockInTime)
+                    : "";
+                  const statusText = shift
+                    ? notClockedIn
+                      ? "Not clocked in"
+                      : shiftTime
+                    : null;
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => {
+                        setSelectedDate(key);
+                        if (shift) {
+                          setEditingShiftId(shift.id);
+                          setEditHoursInput(
+                            getHoursWorked(shift).toFixed(2),
+                          );
+                        }
+                      }}
+                      className={`relative flex aspect-[4/3] min-w-0 flex-col items-start justify-start gap-0.5 rounded-md px-2 py-1.5 text-left transition-all ${
+                        isSelected
+                          ? "bg-blue-600 text-white shadow-sm ring-2 ring-blue-600 ring-offset-1"
+                          : clockedInLate
+                            ? "bg-red-50 text-red-900 hover:bg-red-100"
+                            : isToday
+                              ? "bg-amber-50 text-amber-900 ring-1 ring-amber-300 hover:bg-amber-100"
+                              : "bg-white text-zinc-800 hover:bg-zinc-50"
+                      }`}
+                    >
+                      <span className="text-lg font-semibold">
+                        {d.getDate()}
+                      </span>
+                      {shift && (
+                        <div className="flex min-w-0 max-w-full flex-col gap-0.5">
+                          {statusText && (
+                            <span
+                              className={`truncate text-sm leading-tight ${
+                                isSelected
+                                  ? "text-blue-100"
+                                  : notClockedIn
+                                    ? "text-zinc-600 font-medium"
+                                    : clockedInLate
+                                      ? "text-red-700"
+                                      : "text-zinc-600"
+                              }`}
                             >
-                              Edit hours
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
+                              {shiftTime}
+                            </span>
+                          )}
+                          <div
+                            className={`truncate text-sm leading-tight ${
+                              isSelected
+                                ? "text-blue-100"
+                                : notClockedIn
+                                  ? "text-zinc-600 font-medium"
+                                  : clockedInLate
+                                    ? "text-red-700"
+                                    : "text-zinc-600"
+                            }`}
+                          >
+                            Br:{" "}
+                            {shift.break
+                              ? `${formatTimeShort(shift.break.start)} – ${formatTimeShort(shift.break.end)}`
+                              : "None"}
+                          </div>
+                          {notClockedIn ? (
+                            <span
+                              className={`truncate text-sm font-medium ${
+                                isSelected
+                                  ? "text-blue-200"
+                                  : "text-red-600"
+                              }`}
+                            >
+                              Not Clocked In
+                            </span>
+                          ) : (
+                            <span
+                              className={`truncate text-sm font-medium ${
+                                isSelected
+                                  ? "text-blue-200"
+                                  : "text-zinc-600"
+                              }`}
+                            >
+                              Clocked In: {clockInText}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
@@ -448,7 +556,7 @@ export default function StaffHoursPage() {
           )}
           {editingShiftId &&
             (() => {
-              const shift = filteredShifts.find((s) => s.id === editingShiftId);
+              const shift = shifts.find((s) => s.id === editingShiftId);
               return (
                 <div
                   className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
