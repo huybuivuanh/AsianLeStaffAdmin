@@ -15,6 +15,18 @@ export function getDaysInMonth(year: number, month: number): Date[] {
   return days;
 }
 
+/**
+ * Format a Date as time in 24-hour format (e.g. "09:00", "17:30").
+ * No AM/PM for shorter display.
+ */
+export function formatTimeShort(d: Date): string {
+  return d.toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+}
+
 export function formatHours(hours: number): string {
   const h = Math.floor(hours);
   const m = Math.round((hours - h) * 60);

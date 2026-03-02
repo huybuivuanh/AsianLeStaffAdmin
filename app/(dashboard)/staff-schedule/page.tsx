@@ -7,7 +7,7 @@ import { AddShiftModal } from "@/components/shifts/add-shift-modal";
 import { DeleteShiftModal } from "@/components/shifts/delete-shift-modal";
 import { EditShiftModal } from "@/components/shifts/edit-shift-modal";
 import { AddTipsModal } from "@/components/tips/add-tips-modal";
-import { toDateKey, getDaysInMonth, formatHours } from "@/lib/utils";
+import { toDateKey, getDaysInMonth, formatHours, formatTimeShort } from "@/lib/utils";
 import { getHoursWorked } from "@/lib/shifts";
 import { getTipsForDate } from "@/lib/tips";
 
@@ -213,13 +213,10 @@ export default function StaffHoursPage() {
                     shift.shift.start.getTime() + 5 * 60 * 1000;
                 const notClockedIn = shift && !shift.clockInTime && isPast;
                 const shiftTime = shift
-                  ? `${shift.shift.start.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}–${shift.shift.end.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`
+                  ? `${formatTimeShort(shift.shift.start)}–${formatTimeShort(shift.shift.end)}`
                   : null;
                 const clockInText = shift?.clockInTime
-                  ? shift.clockInTime.toLocaleTimeString([], {
-                      hour: "numeric",
-                      minute: "2-digit",
-                    })
+                  ? formatTimeShort(shift.clockInTime)
                   : "";
                 const statusText = shift
                   ? notClockedIn
@@ -259,6 +256,22 @@ export default function StaffHoursPage() {
                             {shiftTime}
                           </span>
                         )}
+                        <div
+                          className={`truncate text-sm leading-tight ${
+                            isSelected
+                              ? "text-blue-100"
+                              : notClockedIn
+                                ? "text-zinc-600 font-medium"
+                                : clockedInLate
+                                  ? "text-red-700"
+                                  : "text-zinc-600"
+                          }`}
+                        >
+                          Br:{" "}
+                          {shift.break
+                            ? `${formatTimeShort(shift.break.start)} – ${formatTimeShort(shift.break.end)}`
+                            : "None"}
+                        </div>
                         {notClockedIn ? (
                           <span
                             className={`truncate text-sm font-medium ${
@@ -339,23 +352,18 @@ export default function StaffHoursPage() {
                       {shift.userName}
                     </div>
                     <div className="text-zinc-600">
-                      {shift.shift.start.toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}{" "}
-                      –{" "}
-                      {shift.shift.end.toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
+                      {formatTimeShort(shift.shift.start)} –{" "}
+                      {formatTimeShort(shift.shift.end)}
+                    </div>
+                    <div className="mt-0.5 text-xs text-zinc-500">
+                      Br:{" "}
+                      {shift.break
+                        ? `${formatTimeShort(shift.break.start)} – ${formatTimeShort(shift.break.end)}`
+                        : "None"}
                     </div>
                     {shift.clockInTime ? (
                       <div className="mt-1 text-xs text-zinc-500">
-                        Clocked in:{" "}
-                        {shift.clockInTime.toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}{" "}
+                        Clocked in: {formatTimeShort(shift.clockInTime)}{" "}
                         • {formatHours(getHoursWorked(shift))}
                       </div>
                     ) : selectedDate && selectedDate < todayKey ? (

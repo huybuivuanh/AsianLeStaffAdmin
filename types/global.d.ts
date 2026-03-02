@@ -31,8 +31,9 @@ declare global {
     break: TimeRange | null;
     tips: number | 0;
     date: string;
-    clockInTime?: Date | null;
+    clockInTime: Date | null;
     actualHours?: number;
+    noShift: boolean;
   }
 }
 

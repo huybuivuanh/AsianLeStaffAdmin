@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { useUsers } from "@/hooks/use-users";
 import { useShifts } from "@/hooks/use-shifts";
-import { toDateKey, formatHours } from "@/lib/utils";
+import { toDateKey, formatHours, formatTimeShort } from "@/lib/utils";
 import {
   getHoursWorked,
   updateShiftActualHours,
@@ -329,15 +329,8 @@ export default function StaffHoursPage() {
                             {s.userName}
                           </td>
                           <td className="whitespace-nowrap px-4 py-3 text-sm text-zinc-600">
-                            {s.shift.start.toLocaleTimeString([], {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}{" "}
-                            –{" "}
-                            {s.shift.end.toLocaleTimeString([], {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
+                            {formatTimeShort(s.shift.start)} –{" "}
+                            {formatTimeShort(s.shift.end)}
                           </td>
                           <td
                             className={
@@ -347,15 +340,12 @@ export default function StaffHoursPage() {
                             }
                           >
                             {s.clockInTime
-                              ? s.clockInTime.toLocaleTimeString([], {
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                })
+                              ? formatTimeShort(s.clockInTime)
                               : "–"}
                           </td>
                           <td className="whitespace-nowrap px-4 py-3 text-sm text-zinc-600">
                             {s.break
-                              ? `${s.break.start.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} – ${s.break.end.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
+                              ? `${formatTimeShort(s.break.start)} – ${formatTimeShort(s.break.end)}`
                               : "–"}
                           </td>
                           <td className="whitespace-nowrap px-4 py-3 text-right text-sm font-medium text-zinc-900">
