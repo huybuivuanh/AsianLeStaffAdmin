@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, type FormEvent } from "react";
-import { getTipsForDate, saveTips } from "@/lib/tips";
+import { getTipsForDate, saveTips, deleteTipsForDate } from "@/lib/tips";
 
 interface AddTipsModalProps {
   isOpen: boolean;
@@ -21,6 +21,7 @@ export function AddTipsModal({
   const [afternoonCash, setAfternoonCash] = useState(0);
   const [afternoonCard, setAfternoonCard] = useState(0);
   const [saving, setSaving] = useState(false);
+  const [clearing, setClearing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -73,6 +74,27 @@ export function AddTipsModal({
       setError(err instanceof Error ? err.message : "Failed to save tips");
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleClearTips() {
+    if (!selectedDate) return;
+    if (
+      !confirm(
+        `Clear all tips for ${dateLabel}? This will delete the tips from the database and cannot be undone.`,
+      )
+    )
+      return;
+    setError("");
+    setClearing(true);
+    try {
+      await deleteTipsForDate(selectedDate);
+      onSuccess();
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to clear tips");
+    } finally {
+      setClearing(false);
     }
   }
 
@@ -175,21 +197,31 @@ export function AddTipsModal({
                 </div>
               </div>
 
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="flex-1 rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={saving || !selectedDate}
-                  className="flex-1 rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {saving ? "Saving..." : "Save"}
-                </button>
+              <div className="flex flex-col gap-3 pt-2">
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="flex-1 rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleClearTips}
+                    disabled={clearing || loading || !selectedDate}
+                    className="rounded-lg border border-red-300 bg-red-50 px-4 py-2.5 text-sm font-medium text-red-700 transition-colors hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {clearing ? "Clearing..." : "Clear tips"}
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={saving || !selectedDate}
+                    className="flex-1 rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {saving ? "Saving..." : "Save"}
+                  </button>
+                </div>
               </div>
             </>
           )}

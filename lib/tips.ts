@@ -1,4 +1,4 @@
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, deleteDoc } from "firebase/firestore";
 import { clientDb } from "./firebaseConfig";
 
 export async function getTipsForDate(date: string): Promise<Tips | null> {
@@ -42,4 +42,10 @@ export async function saveTips(
     afternoonCard: data.afternoonCard,
     total,
   });
+}
+
+export async function deleteTipsForDate(date: string): Promise<void> {
+  if (!clientDb) throw new Error("Database not configured");
+  const ref = doc(clientDb, "tips", date);
+  await deleteDoc(ref);
 }
