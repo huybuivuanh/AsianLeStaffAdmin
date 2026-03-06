@@ -21,8 +21,7 @@ function toFirestoreTimestamp(date: Date): Timestamp {
 function getBreakHours(shift: Shift): number {
   if (!shift.break) return 0;
   return (
-    (shift.break.end.getTime() - shift.break.start.getTime()) /
-    (1000 * 60 * 60)
+    (shift.break.end.getTime() - shift.break.start.getTime()) / (1000 * 60 * 60)
   );
 }
 
@@ -58,6 +57,7 @@ export async function createShiftsBatch(
         end: toFirestoreTimestamp(s.shift.end),
       },
       date: s.date,
+      noShift: false,
     };
     if (s.break) {
       data.break = {
@@ -86,6 +86,7 @@ export async function createShift(
       end: toFirestoreTimestamp(shift.end),
     },
     date,
+    noShift: false,
   };
   if (breakRange) {
     data.break = {
@@ -130,7 +131,7 @@ function getDayOfWeek(dateStr: string): number {
 export async function getExistingShiftDatesForUser(
   userId: string,
   startDate: string,
-  endDate: string
+  endDate: string,
 ): Promise<Set<string>> {
   if (!clientDb) throw new Error("Database not configured");
   const shiftsRef = collection(clientDb, "shifts");
@@ -138,7 +139,7 @@ export async function getExistingShiftDatesForUser(
     shiftsRef,
     where("userId", "==", userId),
     where("date", ">=", startDate),
-    where("date", "<=", endDate)
+    where("date", "<=", endDate),
   );
   const snapshot = await getDocs(q);
   const dates = new Set<string>();

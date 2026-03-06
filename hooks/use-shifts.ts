@@ -37,7 +37,7 @@ export function useShifts() {
             date: data.date as string,
             clockInTime: data.clockInTime?.toDate?.() ?? null,
             actualHours: data.actualHours as number | undefined,
-            noShift: data.noShift as boolean,
+            noShift: (data.noShift as boolean) ?? false,
           };
         });
         setShifts(list);

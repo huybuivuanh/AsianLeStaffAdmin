@@ -366,15 +366,19 @@ export default function StaffHoursPage() {
                       shift.shift.start.getTime() + 5 * 60 * 1000;
                   const notClockedIn = shift && !shift.clockInTime && isPast;
                   const shiftTime = shift
-                    ? `${formatTimeShort(shift.shift.start)}–${formatTimeShort(shift.shift.end)}`
+                    ? shift.noShift
+                      ? "No Shift"
+                      : `${formatTimeShort(shift.shift.start)}–${formatTimeShort(shift.shift.end)}`
                     : null;
                   const clockInText = shift?.clockInTime
                     ? formatTimeShort(shift.clockInTime)
                     : "";
                   const statusText = shift
-                    ? notClockedIn
-                      ? "Not clocked in"
-                      : shiftTime
+                    ? shift.noShift
+                      ? "No Shift"
+                      : notClockedIn
+                        ? "Not clocked in"
+                        : shiftTime
                     : null;
                   return (
                     <button
@@ -414,7 +418,7 @@ export default function StaffHoursPage() {
                                       : "text-zinc-600"
                               }`}
                             >
-                              {shiftTime}
+                              {statusText}
                             </span>
                           )}
                           <div
@@ -433,24 +437,25 @@ export default function StaffHoursPage() {
                               ? `${formatTimeShort(shift.break.start)} – ${formatTimeShort(shift.break.end)}`
                               : "None"}
                           </div>
-                          {notClockedIn ? (
-                            <span
-                              className={`truncate text-sm font-medium ${
-                                isSelected ? "text-blue-200" : "text-red-600"
-                              }`}
-                            >
-                              Not Clocked In
-                            </span>
-                          ) : (
-                            <span
-                              className={`truncate text-sm font-medium ${
-                                isSelected ? "text-blue-200" : "text-zinc-600"
-                              }`}
-                            >
-                              Clocked In: {clockInText}
-                            </span>
-                          )}
-                          {shift.clockInTime && (
+                          {!shift.noShift &&
+                            (notClockedIn ? (
+                              <span
+                                className={`truncate text-sm font-medium ${
+                                  isSelected ? "text-blue-200" : "text-red-600"
+                                }`}
+                              >
+                                Not Clocked In
+                              </span>
+                            ) : (
+                              <span
+                                className={`truncate text-sm font-medium ${
+                                  isSelected ? "text-blue-200" : "text-zinc-600"
+                                }`}
+                              >
+                                Clocked In: {clockInText}
+                              </span>
+                            ))}
+                          {!shift.noShift && shift.clockInTime && (
                             <span
                               className={`truncate text-sm font-medium ${
                                 isSelected ? "text-blue-200" : "text-zinc-700"
