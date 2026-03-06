@@ -15,13 +15,6 @@ import {
   clearShiftActualHours,
 } from "@/lib/shifts";
 
-function isClockInLate(shift: Shift): boolean {
-  if (!shift.clockInTime) return false;
-  return (
-    shift.clockInTime.getTime() > shift.shift.start.getTime() + 5 * 60 * 1000
-  );
-}
-
 function getWeekKey(dateStr: string): string {
   const d = new Date(dateStr + "T12:00:00");
   const start = new Date(d);

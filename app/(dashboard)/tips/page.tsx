@@ -1,15 +1,23 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
+import { useTips } from "@/hooks/use-tips";
 import { toDateKey, getDaysInMonth } from "@/lib/utils";
-import { getTipsForDate } from "@/lib/tips";
 import { AddTipsModal } from "@/components/tips/add-tips-modal";
 
 export default function TipsPage() {
+  const tips = useTips();
   const [viewDate, setViewDate] = useState(() => new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [addTipsModalOpen, setAddTipsModalOpen] = useState(false);
-  const [tipsByDate, setTipsByDate] = useState<Record<string, Tips | null>>({});
+
+  const tipsByDate = useMemo(() => {
+    const map: Record<string, Tips | null> = {};
+    for (const t of tips) {
+      map[t.date] = t;
+    }
+    return map;
+  }, [tips]);
 
   const monthStart = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
   const todayKey = toDateKey(new Date());
@@ -19,27 +27,6 @@ export default function TipsPage() {
   );
   const weekStart = monthStart.getDay();
   const padding = Array(weekStart).fill(null);
-
-  useEffect(() => {
-    const days = getDaysInMonth(viewDate.getFullYear(), viewDate.getMonth());
-    const dateKeys = days.map((d) => toDateKey(d));
-    let cancelled = false;
-    Promise.all(dateKeys.map((key) => getTipsForDate(key)))
-      .then((results) => {
-        if (cancelled) return;
-        setTipsByDate((prev) => {
-          const next = { ...prev };
-          dateKeys.forEach((key, i) => {
-            next[key] = results[i];
-          });
-          return next;
-        });
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [viewDate]);
 
   function prevMonth() {
     setViewDate((d) => new Date(d.getFullYear(), d.getMonth() - 1));
@@ -193,13 +180,7 @@ export default function TipsPage() {
         isOpen={addTipsModalOpen}
         selectedDate={selectedDate}
         onClose={() => setAddTipsModalOpen(false)}
-        onSuccess={() => {
-          if (selectedDate) {
-            getTipsForDate(selectedDate).then((tips) =>
-              setTipsByDate((prev) => ({ ...prev, [selectedDate]: tips })),
-            );
-          }
-        }}
+        onSuccess={() => {}}
       />
     </div>
   );
