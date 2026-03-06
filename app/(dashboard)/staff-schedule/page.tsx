@@ -6,10 +6,15 @@ import { useShifts } from "@/hooks/use-shifts";
 import { AddShiftModal } from "@/components/shifts/add-shift-modal";
 import { DeleteShiftModal } from "@/components/shifts/delete-shift-modal";
 import { EditShiftModal } from "@/components/shifts/edit-shift-modal";
-import { toDateKey, getDaysInMonth, formatHours, formatTimeShort } from "@/lib/utils";
+import { MonthCalendarNav } from "@/components/calendar/month-calendar-nav";
+import { ScheduleCalendarDayCell } from "@/components/calendar/schedule-calendar-day-cell";
+import { ScheduleDayDetailPanel } from "@/components/calendar/schedule-day-detail-panel";
+import { toDateKey, getDaysInMonth } from "@/lib/utils";
 import { getHoursWorked } from "@/lib/shifts";
 
-export default function StaffHoursPage() {
+const WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+export default function StaffSchedulePage() {
   const users = useUsers();
   const shifts = useShifts();
   const [selectedUserId, setSelectedUserId] = useState<string>("");
@@ -52,7 +57,7 @@ export default function StaffHoursPage() {
     viewDate.getFullYear(),
     viewDate.getMonth(),
   );
-  const weekStart = monthStart.getDay(); // 0=Sun, 1=Mon, ...
+  const weekStart = monthStart.getDay();
   const padding = Array(weekStart).fill(null);
 
   function prevMonth() {
@@ -61,8 +66,6 @@ export default function StaffHoursPage() {
   function nextMonth() {
     setViewDate((d) => new Date(d.getFullYear(), d.getMonth() + 1));
   }
-
-  const hasShiftsOnSelectedDate = selectedDayShifts.length > 0;
 
   return (
     <div>
@@ -89,57 +92,14 @@ export default function StaffHoursPage() {
         </div>
 
         <div className="mt-4 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-md">
-          <div className="flex items-center justify-between border-b border-zinc-100 bg-zinc-50/80 px-5 py-4">
-            <button
-              type="button"
-              onClick={prevMonth}
-              className="flex h-9 w-9 items-center justify-center rounded-lg text-zinc-600 transition-colors hover:bg-zinc-200 hover:text-zinc-900"
-              aria-label="Previous month"
-            >
-              <svg
-                className="h-5 w-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 19l-7-7 7-7"
-                />
-              </svg>
-            </button>
-            <span className="text-lg font-semibold tracking-tight text-zinc-800">
-              {viewDate.toLocaleString("default", {
-                month: "long",
-                year: "numeric",
-              })}
-            </span>
-            <button
-              type="button"
-              onClick={nextMonth}
-              className="flex h-9 w-9 items-center justify-center rounded-lg text-zinc-600 transition-colors hover:bg-zinc-200 hover:text-zinc-900"
-              aria-label="Next month"
-            >
-              <svg
-                className="h-5 w-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 5l7 7-7 7"
-                />
-              </svg>
-            </button>
-          </div>
+          <MonthCalendarNav
+            viewDate={viewDate}
+            onPrevMonth={prevMonth}
+            onNextMonth={nextMonth}
+          />
           <div className="p-4">
             <div className="grid grid-cols-7 gap-px rounded-lg bg-zinc-100 p-px">
-              {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
+              {WEEKDAY_LABELS.map((d) => (
                 <div
                   key={d}
                   className="rounded-sm bg-zinc-50 py-2.5 text-center text-xs font-semibold uppercase tracking-wider text-zinc-500"
@@ -153,197 +113,33 @@ export default function StaffHoursPage() {
               {calendarDays.map((d) => {
                 const key = toDateKey(d);
                 const dayShifts = shiftsByDate[key] ?? [];
-                const shift = dayShifts[0];
-                const isSelected = selectedDate === key;
-                const isToday = key === todayKey;
-                const isPast = key < todayKey;
-                const clockedInLate =
-                  shift?.clockInTime &&
-                  shift.clockInTime.getTime() >
-                    shift.shift.start.getTime() + 5 * 60 * 1000;
-                const notClockedIn = shift && !shift.clockInTime && isPast;
-                const shiftTime = shift
-                  ? shift.noShift
-                    ? "No Shift"
-                    : `${formatTimeShort(shift.shift.start)}–${formatTimeShort(shift.shift.end)}`
-                  : null;
-                const clockInText = shift?.clockInTime
-                  ? formatTimeShort(shift.clockInTime)
-                  : "";
-                const statusText = shift
-                  ? shift.noShift
-                    ? "No Shift"
-                    : notClockedIn
-                      ? "Not clocked in"
-                      : shiftTime
-                  : null;
+                const shift = dayShifts[0] ?? null;
                 return (
-                  <button
+                  <ScheduleCalendarDayCell
                     key={key}
-                    type="button"
-                    onClick={() => setSelectedDate(key)}
-                    className={`relative flex aspect-[4/3] min-w-0 flex-col items-start justify-start gap-0.5 rounded-md px-2 py-1.5 text-left transition-all ${
-                      isSelected
-                        ? "bg-blue-600 text-white shadow-sm ring-2 ring-blue-600 ring-offset-1"
-                        : clockedInLate
-                          ? "bg-red-50 text-red-900 hover:bg-red-100"
-                          : isToday
-                            ? "bg-amber-50 text-amber-900 ring-1 ring-amber-300 hover:bg-amber-100"
-                            : "bg-white text-zinc-800 hover:bg-zinc-50"
-                    }`}
-                  >
-                    <span className="text-lg font-semibold">{d.getDate()}</span>
-                    {shift && (
-                      <div className="flex min-w-0 max-w-full flex-col gap-0.5">
-                        {statusText && (
-                          <span
-                            className={`truncate text-sm leading-tight ${
-                              isSelected
-                                ? "text-blue-100"
-                                : notClockedIn
-                                  ? "text-zinc-600 font-medium"
-                                  : clockedInLate
-                                    ? "text-red-700"
-                                    : "text-zinc-600"
-                            }`}
-                          >
-                            {statusText}
-                          </span>
-                        )}
-                        <div
-                          className={`truncate text-sm leading-tight ${
-                            isSelected
-                              ? "text-blue-100"
-                              : notClockedIn
-                                ? "text-zinc-600 font-medium"
-                                : clockedInLate
-                                  ? "text-red-700"
-                                  : "text-zinc-600"
-                          }`}
-                        >
-                          Br:{" "}
-                          {shift.break
-                            ? `${formatTimeShort(shift.break.start)} – ${formatTimeShort(shift.break.end)}`
-                            : "None"}
-                        </div>
-                        {!shift.noShift &&
-                          (notClockedIn ? (
-                            <span
-                              className={`truncate text-sm font-medium ${
-                                isSelected ? "text-blue-200" : "text-red-600"
-                              }`}
-                            >
-                              Not Clocked In
-                            </span>
-                          ) : (
-                            <span
-                              className={`truncate text-sm font-medium ${
-                                isSelected ? "text-blue-200" : "text-zinc-600"
-                              }`}
-                            >
-                              Clocked In: {clockInText}
-                            </span>
-                          ))}
-                      </div>
-                    )}
-                  </button>
+                    date={d}
+                    dateKey={key}
+                    shift={shift}
+                    isSelected={selectedDate === key}
+                    isToday={key === todayKey}
+                    todayKey={todayKey}
+                    onSelect={setSelectedDate}
+                  />
                 );
               })}
             </div>
           </div>
         </div>
 
-        <div className="mt-6 rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <h3 className="font-medium text-zinc-900">
-              {selectedDate
-                ? new Date(selectedDate + "T12:00:00").toLocaleDateString(
-                    undefined,
-                    {
-                      weekday: "long",
-                      month: "long",
-                      day: "numeric",
-                      year: "numeric",
-                    },
-                  )
-                : "Select a day"}
-            </h3>
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => setAddShiftModalOpen(true)}
-                disabled={hasShiftsOnSelectedDate}
-                className="rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                Add shifts
-              </button>
-              <button
-                type="button"
-                onClick={() => setEditShiftModalOpen(true)}
-                disabled={!hasShiftsOnSelectedDate}
-                className="rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                Edit shifts
-              </button>
-              <button
-                type="button"
-                onClick={() => setDeleteShiftModalOpen(true)}
-                disabled={!hasShiftsOnSelectedDate}
-                className="rounded-lg border border-red-300 bg-red-50 px-4 py-2.5 text-sm font-medium text-red-700 transition-colors hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                Delete shifts
-              </button>
-            </div>
-          </div>
-          {selectedDate ? (
-            selectedDayShifts.length > 0 ? (
-              <div className="mt-4 space-y-2">
-                {selectedDayShifts.map((shift) => (
-                  <div
-                    key={shift.id}
-                    className="rounded border border-zinc-100 bg-zinc-50 p-3 text-sm"
-                  >
-                    <div className="font-medium text-zinc-900">
-                      {shift.userName}
-                    </div>
-                    <div className="text-zinc-600">
-                      {shift.noShift
-                        ? "No Shift"
-                        : `${formatTimeShort(shift.shift.start)} – ${formatTimeShort(shift.shift.end)}`}
-                    </div>
-                    <div className="mt-0.5 text-xs text-zinc-500">
-                      Br:{" "}
-                      {shift.break
-                        ? `${formatTimeShort(shift.break.start)} – ${formatTimeShort(shift.break.end)}`
-                        : "None"}
-                    </div>
-                    {shift.clockInTime ? (
-                      <div className="mt-1 text-xs text-zinc-500">
-                        Clocked in: {formatTimeShort(shift.clockInTime)}{" "}
-                        • {formatHours(getHoursWorked(shift))}
-                      </div>
-                    ) : selectedDate && selectedDate < todayKey ? (
-                      <div className="mt-1 text-xs text-amber-600">
-                        Not clocked in
-                      </div>
-                    ) : null}
-                  </div>
-                ))}
-                <div className="border-t border-zinc-200 pt-3 font-medium text-zinc-900">
-                  Total: {formatHours(selectedDayHours)}
-                </div>
-              </div>
-            ) : (
-              <p className="mt-4 text-sm text-zinc-500">
-                No shifts this day. Click Add shift to add one.
-              </p>
-            )
-          ) : (
-            <p className="mt-4 text-sm text-zinc-500">
-              Click a date to view shifts and actions.
-            </p>
-          )}
-        </div>
+        <ScheduleDayDetailPanel
+          selectedDate={selectedDate}
+          shifts={selectedDayShifts}
+          totalHours={selectedDayHours}
+          todayKey={todayKey}
+          onAddShifts={() => setAddShiftModalOpen(true)}
+          onEditShifts={() => setEditShiftModalOpen(true)}
+          onDeleteShifts={() => setDeleteShiftModalOpen(true)}
+        />
       </div>
 
       <AddShiftModal

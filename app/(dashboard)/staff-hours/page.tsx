@@ -4,62 +4,21 @@ import { useState, useMemo } from "react";
 import { useUsers } from "@/hooks/use-users";
 import { useShifts } from "@/hooks/use-shifts";
 import {
-  toDateKey,
-  formatHours,
-  formatTimeShort,
-  getDaysInMonth,
-} from "@/lib/utils";
-import {
-  getHoursWorked,
-  updateShiftActualHours,
-  clearShiftActualHours,
-} from "@/lib/shifts";
+  getWeekKey,
+  getMonthRange,
+  getWeekRange,
+  getMonthOptions,
+  getWeekOptions,
+} from "@/lib/periodUtils";
+import { toDateKey, formatHours, getDaysInMonth } from "@/lib/utils";
+import { getHoursWorked } from "@/lib/shifts";
+import { MonthCalendarNav } from "@/components/calendar/month-calendar-nav";
+import { HoursCalendarDayCell } from "@/components/calendar/hours-calendar-day-cell";
+import { HoursSummaryCards } from "@/components/calendar/hours-summary-cards";
+import { EditHoursModal } from "@/components/shifts/edit-hours-modal";
 
-function getWeekKey(dateStr: string): string {
-  const d = new Date(dateStr + "T12:00:00");
-  const start = new Date(d);
-  start.setDate(d.getDate() - d.getDay());
-  return toDateKey(start);
-}
-
-function getMonthRange(ym: string): { start: string; end: string } {
-  const [y, m] = ym.split("-").map(Number);
-  const start = toDateKey(new Date(y, m - 1, 1));
-  const lastDay = new Date(y, m, 0);
-  const end = toDateKey(lastDay);
-  return { start, end };
-}
-
-function getWeekRange(sundayKey: string): { start: string; end: string } {
-  const d = new Date(sundayKey + "T12:00:00");
-  const end = new Date(d);
-  end.setDate(d.getDate() + 6);
-  return { start: sundayKey, end: toDateKey(end) };
-}
-
-function getMonthOptions(count = 12): { value: string; label: string }[] {
-  const now = new Date();
-  return Array.from({ length: count }, (_, i) => {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-    const label = d.toLocaleString("default", {
-      month: "long",
-      year: "numeric",
-    });
-    return { value, label };
-  });
-}
-
-function getWeekOptions(count = 12): { value: string; label: string }[] {
-  const now = new Date();
-  return Array.from({ length: count }, (_, i) => {
-    const d = new Date(now);
-    d.setDate(d.getDate() - d.getDay() - i * 7);
-    const value = toDateKey(d);
-    const label = `Week of ${d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}`;
-    return { value, label };
-  });
-}
+type ViewBy = "range" | "month" | "week";
+const WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 export default function StaffHoursPage() {
   const users = useUsers();
@@ -71,7 +30,6 @@ export default function StaffHoursPage() {
   });
   const [endDate, setEndDate] = useState(() => toDateKey(new Date()));
   const [selectedUserId, setSelectedUserId] = useState("");
-  type ViewBy = "range" | "month" | "week";
   const [viewBy, setViewBy] = useState<ViewBy>("range");
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const d = new Date();
@@ -100,14 +58,12 @@ export default function StaffHoursPage() {
 
   const filteredShifts = useMemo(() => {
     if (!effectiveUserId) return [];
-    return shifts
-      .filter(
-        (s) =>
-          s.userId === effectiveUserId &&
-          s.date >= effectiveStart &&
-          s.date <= effectiveEnd,
-      )
-      .sort((a, b) => a.date.localeCompare(b.date));
+    return shifts.filter(
+      (s) =>
+        s.userId === effectiveUserId &&
+        s.date >= effectiveStart &&
+        s.date <= effectiveEnd,
+    );
   }, [shifts, effectiveUserId, effectiveStart, effectiveEnd]);
 
   const totalHours = useMemo(
@@ -115,7 +71,7 @@ export default function StaffHoursPage() {
     [filteredShifts],
   );
 
-  const byWeek = useMemo(() => {
+  const byWeek = useMemo((): readonly (readonly [string, number])[] => {
     const hoursMap: Record<string, number> = {};
     for (const s of filteredShifts) {
       const week = getWeekKey(s.date);
@@ -126,7 +82,7 @@ export default function StaffHoursPage() {
       .map(([week, h]) => [week, h] as const);
   }, [filteredShifts]);
 
-  const byMonth = useMemo(() => {
+  const byMonth = useMemo((): readonly (readonly [string, number])[] => {
     const hoursMap: Record<string, number> = {};
     for (const s of filteredShifts) {
       const month = s.date.slice(0, 7);
@@ -185,8 +141,27 @@ export default function StaffHoursPage() {
     setViewDate((d) => new Date(d.getFullYear(), d.getMonth() + 1));
   }
 
+  function handleDaySelect(dateKey: string, shift: Shift | null) {
+    setSelectedDate(dateKey);
+    if (shift) {
+      setEditingShiftId(shift.id);
+      setEditHoursInput(getHoursWorked(shift).toFixed(2));
+    }
+  }
+
+  const editingShift = editingShiftId
+    ? shifts.find((s) => s.id === editingShiftId) ?? null
+    : null;
+
   return (
     <div>
+      <div>
+        <h1 className="text-2xl font-semibold text-zinc-900">Staff Hours</h1>
+        <p className="mt-2 text-zinc-600">
+          Summary of hours and payroll export.
+        </p>
+      </div>
+
       <div className="mt-6 flex flex-wrap items-end gap-4">
         <div>
           <label className="block text-sm font-medium text-zinc-700">
@@ -292,57 +267,14 @@ export default function StaffHoursPage() {
       ) : (
         <>
           <div className="mt-6 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-md">
-            <div className="flex items-center justify-between border-b border-zinc-100 bg-zinc-50/80 px-5 py-4">
-              <button
-                type="button"
-                onClick={prevMonth}
-                className="flex h-9 w-9 items-center justify-center rounded-lg text-zinc-600 transition-colors hover:bg-zinc-200 hover:text-zinc-900"
-                aria-label="Previous month"
-              >
-                <svg
-                  className="h-5 w-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 19l-7-7 7-7"
-                  />
-                </svg>
-              </button>
-              <span className="text-lg font-semibold tracking-tight text-zinc-800">
-                {viewDate.toLocaleString("default", {
-                  month: "long",
-                  year: "numeric",
-                })}
-              </span>
-              <button
-                type="button"
-                onClick={nextMonth}
-                className="flex h-9 w-9 items-center justify-center rounded-lg text-zinc-600 transition-colors hover:bg-zinc-200 hover:text-zinc-900"
-                aria-label="Next month"
-              >
-                <svg
-                  className="h-5 w-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 5l7 7-7 7"
-                  />
-                </svg>
-              </button>
-            </div>
+            <MonthCalendarNav
+              viewDate={viewDate}
+              onPrevMonth={prevMonth}
+              onNextMonth={nextMonth}
+            />
             <div className="p-4">
               <div className="grid grid-cols-7 gap-px rounded-lg bg-zinc-100 p-px">
-                {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
+                {WEEKDAY_LABELS.map((d) => (
                   <div
                     key={d}
                     className="rounded-sm bg-zinc-50 py-2.5 text-center text-xs font-semibold uppercase tracking-wider text-zinc-500"
@@ -356,117 +288,18 @@ export default function StaffHoursPage() {
                 {calendarDays.map((d) => {
                   const key = toDateKey(d);
                   const dayShifts = shiftsByDateCalendar[key] ?? [];
-                  const shift = dayShifts[0];
-                  const isSelected = selectedDate === key;
-                  const isToday = key === todayKey;
-                  const isPast = key < todayKey;
-                  const clockedInLate =
-                    shift?.clockInTime &&
-                    shift.clockInTime.getTime() >
-                      shift.shift.start.getTime() + 5 * 60 * 1000;
-                  const notClockedIn = shift && !shift.clockInTime && isPast;
-                  const shiftTime = shift
-                    ? shift.noShift
-                      ? "No Shift"
-                      : `${formatTimeShort(shift.shift.start)}–${formatTimeShort(shift.shift.end)}`
-                    : null;
-                  const clockInText = shift?.clockInTime
-                    ? formatTimeShort(shift.clockInTime)
-                    : "";
-                  const statusText = shift
-                    ? shift.noShift
-                      ? "No Shift"
-                      : notClockedIn
-                        ? "Not clocked in"
-                        : shiftTime
-                    : null;
+                  const shift = dayShifts[0] ?? null;
                   return (
-                    <button
+                    <HoursCalendarDayCell
                       key={key}
-                      type="button"
-                      onClick={() => {
-                        setSelectedDate(key);
-                        if (shift) {
-                          setEditingShiftId(shift.id);
-                          setEditHoursInput(getHoursWorked(shift).toFixed(2));
-                        }
-                      }}
-                      className={`relative flex aspect-[4/3] min-w-0 flex-col items-start justify-start gap-0.5 rounded-md px-2 py-1.5 text-left transition-all ${
-                        isSelected
-                          ? "bg-blue-600 text-white shadow-sm ring-2 ring-blue-600 ring-offset-1"
-                          : clockedInLate
-                            ? "bg-red-50 text-red-900 hover:bg-red-100"
-                            : isToday
-                              ? "bg-amber-50 text-amber-900 ring-1 ring-amber-300 hover:bg-amber-100"
-                              : "bg-white text-zinc-800 hover:bg-zinc-50"
-                      }`}
-                    >
-                      <span className="text-lg font-semibold">
-                        {d.getDate()}
-                      </span>
-                      {shift && (
-                        <div className="flex min-w-0 max-w-full flex-col gap-0.5">
-                          {statusText && (
-                            <span
-                              className={`truncate text-sm leading-tight ${
-                                isSelected
-                                  ? "text-blue-100"
-                                  : notClockedIn
-                                    ? "text-zinc-600 font-medium"
-                                    : clockedInLate
-                                      ? "text-red-700"
-                                      : "text-zinc-600"
-                              }`}
-                            >
-                              {statusText}
-                            </span>
-                          )}
-                          <div
-                            className={`truncate text-sm leading-tight ${
-                              isSelected
-                                ? "text-blue-100"
-                                : notClockedIn
-                                  ? "text-zinc-600 font-medium"
-                                  : clockedInLate
-                                    ? "text-red-700"
-                                    : "text-zinc-600"
-                            }`}
-                          >
-                            Br:{" "}
-                            {shift.break
-                              ? `${formatTimeShort(shift.break.start)} – ${formatTimeShort(shift.break.end)}`
-                              : "None"}
-                          </div>
-                          {!shift.noShift &&
-                            (notClockedIn ? (
-                              <span
-                                className={`truncate text-sm font-medium ${
-                                  isSelected ? "text-blue-200" : "text-red-600"
-                                }`}
-                              >
-                                Not Clocked In
-                              </span>
-                            ) : (
-                              <span
-                                className={`truncate text-sm font-medium ${
-                                  isSelected ? "text-blue-200" : "text-zinc-600"
-                                }`}
-                              >
-                                Clocked In: {clockInText}
-                              </span>
-                            ))}
-                          {!shift.noShift && shift.clockInTime && (
-                            <span
-                              className={`truncate text-sm font-medium ${
-                                isSelected ? "text-blue-200" : "text-zinc-700"
-                              }`}
-                            >
-                              {formatHours(getHoursWorked(shift))} hrs
-                            </span>
-                          )}
-                        </div>
-                      )}
-                    </button>
+                      date={d}
+                      dateKey={key}
+                      shift={shift}
+                      isSelected={selectedDate === key}
+                      isToday={key === todayKey}
+                      todayKey={todayKey}
+                      onSelect={handleDaySelect}
+                    />
                   );
                 })}
               </div>
@@ -474,163 +307,26 @@ export default function StaffHoursPage() {
           </div>
 
           {filteredShifts.length > 0 && (
-            <div className="mt-6 grid gap-4 sm:grid-cols-2">
-              <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
-                <h3 className="text-sm font-semibold text-zinc-700">
-                  Total ({effectiveStart} – {effectiveEnd})
-                </h3>
-                <p className="mt-2 text-2xl font-semibold text-zinc-900">
-                  {formatHours(totalHours)}
-                </p>
-                {selectedStaffName && (
-                  <p className="mt-1 text-xs text-zinc-500">
-                    {selectedStaffName}
-                  </p>
-                )}
-              </div>
-              {byWeek.length > 0 && (
-                <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
-                  <h3 className="text-sm font-semibold text-zinc-700">
-                    By week
-                  </h3>
-                  <ul className="mt-2 space-y-1 text-sm">
-                    {byWeek.map(([week, h]) => (
-                      <li
-                        key={week}
-                        className="flex justify-between text-zinc-700"
-                      >
-                        <span>
-                          Week of{" "}
-                          {new Date(week + "T12:00:00").toLocaleDateString(
-                            undefined,
-                            { month: "short", day: "numeric", year: "numeric" },
-                          )}
-                        </span>
-                        <span>{formatHours(h)}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {byMonth.length > 0 && (
-                <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm sm:col-span-2">
-                  <h3 className="text-sm font-semibold text-zinc-700">
-                    By month
-                  </h3>
-                  <ul className="mt-2 flex flex-wrap gap-4 text-sm">
-                    {byMonth.map(([month, h]) => (
-                      <li
-                        key={month}
-                        className="flex justify-between gap-2 text-zinc-700"
-                      >
-                        <span>
-                          {new Date(month + "-01").toLocaleString("default", {
-                            month: "long",
-                            year: "numeric",
-                          })}
-                        </span>
-                        <span className="font-medium">{formatHours(h)}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
+            <HoursSummaryCards
+              effectiveStart={effectiveStart}
+              effectiveEnd={effectiveEnd}
+              totalHours={totalHours}
+              selectedStaffName={selectedStaffName ?? null}
+              byWeek={byWeek}
+              byMonth={byMonth}
+            />
           )}
-          {editingShiftId &&
-            (() => {
-              const shift = shifts.find((s) => s.id === editingShiftId);
-              return (
-                <div
-                  className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-                  onClick={() => setEditingShiftId(null)}
-                >
-                  <div
-                    className="w-full max-w-sm rounded-xl border border-zinc-200 bg-white p-5 shadow-lg"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    {shift ? (
-                      <>
-                        <h3 className="text-sm font-semibold text-zinc-900">
-                          Edit hours —{" "}
-                          {new Date(
-                            shift.date + "T12:00:00",
-                          ).toLocaleDateString(undefined, {
-                            weekday: "short",
-                            month: "short",
-                            day: "numeric",
-                            year: "numeric",
-                          })}
-                        </h3>
-                        <p className="mt-1 text-xs text-zinc-500">
-                          {shift.userName} · Computed:{" "}
-                          {formatHours(getHoursWorked(shift))}
-                          {shift.actualHours !== undefined && " (overridden)"}
-                        </p>
-                        <div className="mt-4">
-                          <label className="block text-sm font-medium text-zinc-700">
-                            Hours
-                          </label>
-                          <input
-                            type="number"
-                            min={0}
-                            step={0.25}
-                            value={editHoursInput}
-                            onChange={(e) => setEditHoursInput(e.target.value)}
-                            className="mt-1 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
-                          />
-                        </div>
-                        <div className="mt-5 flex flex-wrap gap-2">
-                          <button
-                            type="button"
-                            onClick={async () => {
-                              const val = parseFloat(editHoursInput);
-                              if (!Number.isFinite(val) || val < 0) return;
-                              await updateShiftActualHours(editingShiftId, val);
-                              setEditingShiftId(null);
-                            }}
-                            className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800"
-                          >
-                            Save
-                          </button>
-                          <button
-                            type="button"
-                            disabled={shift.actualHours === undefined}
-                            onClick={async () => {
-                              await clearShiftActualHours(editingShiftId);
-                              setEditingShiftId(null);
-                            }}
-                            className="rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50"
-                          >
-                            Reset to calculated
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setEditingShiftId(null)}
-                            className="rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <p className="text-sm text-zinc-600">
-                          Shift no longer in view.
-                        </p>
-                        <button
-                          type="button"
-                          onClick={() => setEditingShiftId(null)}
-                          className="mt-4 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800"
-                        >
-                          Close
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              );
-            })()}
+
+          {editingShiftId && (
+            <EditHoursModal
+              shiftId={editingShiftId}
+              shift={editingShift}
+              hoursInput={editHoursInput}
+              onHoursInputChange={setEditHoursInput}
+              onSave={() => setEditingShiftId(null)}
+              onClose={() => setEditingShiftId(null)}
+            />
+          )}
         </>
       )}
     </div>

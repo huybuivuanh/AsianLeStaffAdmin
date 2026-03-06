@@ -3,7 +3,11 @@
 import { useState, useMemo } from "react";
 import { useTips } from "@/hooks/use-tips";
 import { toDateKey, getDaysInMonth } from "@/lib/utils";
+import { MonthCalendarNav } from "@/components/calendar/month-calendar-nav";
+import { TipsCalendarDayCell } from "@/components/calendar/tips-calendar-day-cell";
 import { AddTipsModal } from "@/components/tips/add-tips-modal";
+
+const WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 export default function TipsPage() {
   const tips = useTips();
@@ -37,58 +41,23 @@ export default function TipsPage() {
 
   return (
     <div>
+      <div>
+        <h1 className="text-2xl font-semibold text-zinc-900">Tips</h1>
+        <p className="mt-2 text-zinc-600">
+          View and manage daily tips (AM/PM, cash/card). Click a date to add or
+          edit tips.
+        </p>
+      </div>
+
       <div className="mt-6 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-md">
-        <div className="flex items-center justify-between border-b border-zinc-100 bg-zinc-50/80 px-5 py-4">
-          <button
-            type="button"
-            onClick={prevMonth}
-            className="flex h-9 w-9 items-center justify-center rounded-lg text-zinc-600 transition-colors hover:bg-zinc-200 hover:text-zinc-900"
-            aria-label="Previous month"
-          >
-            <svg
-              className="h-5 w-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15 19l-7-7 7-7"
-              />
-            </svg>
-          </button>
-          <span className="text-lg font-semibold tracking-tight text-zinc-800">
-            {viewDate.toLocaleString("default", {
-              month: "long",
-              year: "numeric",
-            })}
-          </span>
-          <button
-            type="button"
-            onClick={nextMonth}
-            className="flex h-9 w-9 items-center justify-center rounded-lg text-zinc-600 transition-colors hover:bg-zinc-200 hover:text-zinc-900"
-            aria-label="Next month"
-          >
-            <svg
-              className="h-5 w-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 5l7 7-7 7"
-              />
-            </svg>
-          </button>
-        </div>
+        <MonthCalendarNav
+          viewDate={viewDate}
+          onPrevMonth={prevMonth}
+          onNextMonth={nextMonth}
+        />
         <div className="p-4">
           <div className="grid grid-cols-7 gap-px rounded-lg bg-zinc-100 p-px">
-            {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
+            {WEEKDAY_LABELS.map((d) => (
               <div
                 key={d}
                 className="rounded-sm bg-zinc-50 py-2.5 text-center text-xs font-semibold uppercase tracking-wider text-zinc-500"
@@ -101,75 +70,20 @@ export default function TipsPage() {
             ))}
             {calendarDays.map((d) => {
               const key = toDateKey(d);
-              const tips = tipsByDate[key] ?? null;
-              const isSelected = selectedDate === key;
-              const isToday = key === todayKey;
-              const total = tips?.total ?? 0;
-              const hasTips = total > 0;
-              const amCash = tips?.morningCash ?? 0;
-              const amCard = tips?.morningCard ?? 0;
-              const pmCash = tips?.afternoonCash ?? 0;
-              const pmCard = tips?.afternoonCard ?? 0;
-
+              const dayTips = tipsByDate[key] ?? null;
               return (
-                <button
+                <TipsCalendarDayCell
                   key={key}
-                  type="button"
+                  date={d}
+                  dateKey={key}
+                  tips={dayTips}
+                  isSelected={selectedDate === key}
+                  isToday={key === todayKey}
                   onClick={() => {
                     setSelectedDate(key);
                     setAddTipsModalOpen(true);
                   }}
-                  className={`relative flex aspect-[4/3] min-w-0 flex-col items-start justify-start gap-0.5 rounded-md px-2 py-1.5 text-left transition-all ${
-                    isSelected
-                      ? "bg-blue-600 text-white shadow-sm ring-2 ring-blue-600 ring-offset-1"
-                      : isToday
-                        ? "bg-amber-50 text-amber-900 ring-1 ring-amber-300 hover:bg-amber-100"
-                        : "bg-white text-zinc-800 hover:bg-zinc-50"
-                  }`}
-                >
-                  <span className="text-lg font-semibold">{d.getDate()}</span>
-                  <div className="flex min-w-0 max-w-full flex-col gap-0.5">
-                    {hasTips && (
-                      <>
-                        <span
-                          className={`truncate text-xs leading-tight ${
-                            isSelected ? "text-blue-200" : "text-zinc-600"
-                          }`}
-                        >
-                          AM Cash: ${amCash.toFixed(2)}
-                        </span>
-                        <span
-                          className={`truncate text-xs leading-tight ${
-                            isSelected ? "text-blue-200" : "text-zinc-600"
-                          }`}
-                        >
-                          AM Card: ${amCard.toFixed(2)}
-                        </span>
-                        <span
-                          className={`truncate text-xs leading-tight ${
-                            isSelected ? "text-blue-200" : "text-zinc-600"
-                          }`}
-                        >
-                          PM Cash: ${pmCash.toFixed(2)}
-                        </span>
-                        <span
-                          className={`truncate text-xs leading-tight ${
-                            isSelected ? "text-blue-200" : "text-zinc-600"
-                          }`}
-                        >
-                          PM Card: ${pmCard.toFixed(2)}
-                        </span>
-                        <span
-                          className={`truncate text-sm font-medium leading-tight ${
-                            isSelected ? "text-blue-100" : "text-zinc-800"
-                          }`}
-                        >
-                          Total: ${total.toFixed(2)}
-                        </span>
-                      </>
-                    )}
-                  </div>
-                </button>
+                />
               );
             })}
           </div>
