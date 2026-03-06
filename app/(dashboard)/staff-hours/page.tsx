@@ -457,6 +457,15 @@ export default function StaffHoursPage() {
                               Clocked In: {clockInText}
                             </span>
                           )}
+                          {shift.clockInTime && (
+                            <span
+                              className={`truncate text-sm font-medium ${
+                                isSelected ? "text-blue-200" : "text-zinc-700"
+                              }`}
+                            >
+                              {formatHours(getHoursWorked(shift))} hrs
+                            </span>
+                          )}
                         </div>
                       )}
                     </button>
