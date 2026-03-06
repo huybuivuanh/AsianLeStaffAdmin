@@ -23,7 +23,6 @@ export function useUsers() {
             id: doc.id,
             name: data.name as string,
             pin: data.pin as string,
-            server: (data.server as boolean) ?? false,
             createdAt: data.createdAt?.toDate?.() ?? new Date(),
             updatedAt: data.updatedAt?.toDate?.(),
           };

@@ -20,20 +20,17 @@ export function UserModal({
 }: UserModalProps) {
   const [name, setName] = useState("");
   const [pin, setPin] = useState("");
-  const [server, setServer] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
     if (isOpen) {
       if (mode === "edit" && user) {
-        setName(user.name);
-        setPin(user.pin);
-        setServer(user.server);
+        setName(user.name ?? "");
+        setPin(user.pin ?? "");
       } else {
         setName("");
         setPin("");
-        setServer(false);
       }
       setError("");
     }
@@ -62,9 +59,9 @@ export function UserModal({
       }
 
       if (mode === "add") {
-        await addUser(nameVal, pinVal, server);
+        await addUser(nameVal, pinVal);
       } else if (user) {
-        await updateUser(user.id, nameVal, pinVal, server);
+        await updateUser(user.id, nameVal, pinVal);
       }
       onSuccess();
       onClose();
@@ -105,7 +102,7 @@ export function UserModal({
             <input
               id="user-name"
               type="text"
-              value={name}
+              value={name ?? ""}
               onChange={(e) => setName(e.target.value)}
               required
               className="mt-1 w-full rounded-lg border border-zinc-300 px-4 py-2.5 text-zinc-900 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
@@ -122,24 +119,13 @@ export function UserModal({
               id="user-pin"
               type="text"
               inputMode="numeric"
-              value={pin}
+              value={pin ?? ""}
               onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
               required
               maxLength={4}
               placeholder="4 digits"
               className="mt-1 w-full rounded-lg border border-zinc-300 px-4 py-2.5 font-mono text-zinc-900 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
             />
-          </div>
-          <div>
-            <label className="flex cursor-pointer items-center gap-2">
-              <input
-                type="checkbox"
-                checked={server}
-                onChange={(e) => setServer(e.target.checked)}
-                className="rounded border-zinc-300 text-zinc-900 focus:ring-zinc-500"
-              />
-              <span className="text-sm font-medium text-zinc-700">Server</span>
-            </label>
           </div>
           <div className="flex gap-3 pt-2">
             <button

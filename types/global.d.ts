@@ -3,7 +3,6 @@ declare global {
     id: string;
     name: string;
     pin: string;
-    server: boolean;
     createdAt: Date;
     updatedAt?: Date;
   }
