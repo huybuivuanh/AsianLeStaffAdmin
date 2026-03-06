@@ -23,6 +23,21 @@ export default function TipsPage() {
     return map;
   }, [tips]);
 
+  const viewMonthPrefix = `${viewDate.getFullYear()}-${String(viewDate.getMonth() + 1).padStart(2, "0")}`;
+  const monthlySummary = useMemo(() => {
+    const inMonth = tips.filter((t) => t.date.startsWith(viewMonthPrefix));
+    return inMonth.reduce(
+      (acc, t) => ({
+        morningCash: acc.morningCash + (t.morningCash ?? 0),
+        morningCard: acc.morningCard + (t.morningCard ?? 0),
+        afternoonCash: acc.afternoonCash + (t.afternoonCash ?? 0),
+        afternoonCard: acc.afternoonCard + (t.afternoonCard ?? 0),
+        total: acc.total + (t.total ?? 0),
+      }),
+      { morningCash: 0, morningCard: 0, afternoonCash: 0, afternoonCard: 0, total: 0 },
+    );
+  }, [tips, viewMonthPrefix]);
+
   const monthStart = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
   const todayKey = toDateKey(new Date());
   const calendarDays = getDaysInMonth(
@@ -78,6 +93,28 @@ export default function TipsPage() {
                 />
               );
             })}
+          </div>
+        </div>
+        <div className="border-t border-zinc-100 bg-zinc-50/80 px-5 py-4">
+          <h3 className="text-sm font-semibold text-zinc-700">
+            {viewDate.toLocaleString("default", { month: "long", year: "numeric" })} summary
+          </h3>
+          <div className="mt-3 flex flex-wrap gap-x-6 gap-y-2 text-sm">
+            <span className="text-zinc-600">
+              AM cash: ${monthlySummary.morningCash.toFixed(2)}
+            </span>
+            <span className="text-zinc-600">
+              AM card: ${monthlySummary.morningCard.toFixed(2)}
+            </span>
+            <span className="text-zinc-600">
+              PM cash: ${monthlySummary.afternoonCash.toFixed(2)}
+            </span>
+            <span className="text-zinc-600">
+              PM card: ${monthlySummary.afternoonCard.toFixed(2)}
+            </span>
+            <span className="font-semibold text-zinc-900">
+              Total: ${monthlySummary.total.toFixed(2)}
+            </span>
           </div>
         </div>
       </div>
