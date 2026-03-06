@@ -10,7 +10,7 @@ import {
   getMonthOptions,
   getWeekOptions,
 } from "@/lib/periodUtils";
-import { toDateKey, formatHours, getDaysInMonth } from "@/lib/utils";
+import { toDateKey, getDaysInMonth } from "@/lib/utils";
 import { getHoursWorked } from "@/lib/shifts";
 import { MonthCalendarNav } from "@/components/calendar/month-calendar-nav";
 import { HoursCalendarDayCell } from "@/components/calendar/hours-calendar-day-cell";
