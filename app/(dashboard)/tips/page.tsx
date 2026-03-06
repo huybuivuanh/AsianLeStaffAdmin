@@ -1,15 +1,22 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useUsers } from "@/hooks/use-users";
 import { toDateKey, getDaysInMonth } from "@/lib/utils";
 import { getTipsForDate } from "@/lib/tips";
 import { AddTipsModal } from "@/components/tips/add-tips-modal";
 
+const ALL_STAFF_ID = "";
+
 export default function TipsPage() {
+  const users = useUsers();
+  const [selectedUserId, setSelectedUserId] = useState(ALL_STAFF_ID);
   const [viewDate, setViewDate] = useState(() => new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [addTipsModalOpen, setAddTipsModalOpen] = useState(false);
   const [tipsByDate, setTipsByDate] = useState<Record<string, Tips | null>>({});
+
+  const effectiveUserId = selectedUserId || ALL_STAFF_ID;
 
   const monthStart = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
   const todayKey = toDateKey(new Date());
@@ -50,15 +57,24 @@ export default function TipsPage() {
 
   return (
     <div>
-      <div>
-        <h1 className="text-2xl font-semibold text-zinc-900">Tips</h1>
-        <p className="mt-2 text-zinc-600">
-          View and manage daily tips (AM/PM, cash/card). Click a date to add or
-          edit tips.
-        </p>
+      <div className="mt-6 flex flex-wrap items-end gap-4">
+        <div>
+          <select
+            value={effectiveUserId}
+            onChange={(e) => setSelectedUserId(e.target.value)}
+            className="mt-1 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
+          >
+            <option value={ALL_STAFF_ID}>All staff</option>
+            {users.map((u) => (
+              <option key={u.id} value={u.id}>
+                {u.name}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
-      <div className="mt-6 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-md">
+      <div className="mt-4 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-md">
         <div className="flex items-center justify-between border-b border-zinc-100 bg-zinc-50/80 px-5 py-4">
           <button
             type="button"

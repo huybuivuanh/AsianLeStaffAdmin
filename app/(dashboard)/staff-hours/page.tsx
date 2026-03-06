@@ -3,7 +3,12 @@
 import { useState, useMemo } from "react";
 import { useUsers } from "@/hooks/use-users";
 import { useShifts } from "@/hooks/use-shifts";
-import { toDateKey, formatHours, formatTimeShort, getDaysInMonth } from "@/lib/utils";
+import {
+  toDateKey,
+  formatHours,
+  formatTimeShort,
+  getDaysInMonth,
+} from "@/lib/utils";
 import {
   getHoursWorked,
   updateShiftActualHours,
@@ -189,13 +194,6 @@ export default function StaffHoursPage() {
 
   return (
     <div>
-      <div>
-        <h1 className="text-2xl font-semibold text-zinc-900">Staff Hours</h1>
-        <p className="mt-2 text-zinc-600">
-          Summary of hours and payroll export.
-        </p>
-      </div>
-
       <div className="mt-6 flex flex-wrap items-end gap-4">
         <div>
           <label className="block text-sm font-medium text-zinc-700">
@@ -393,9 +391,7 @@ export default function StaffHoursPage() {
                         setSelectedDate(key);
                         if (shift) {
                           setEditingShiftId(shift.id);
-                          setEditHoursInput(
-                            getHoursWorked(shift).toFixed(2),
-                          );
+                          setEditHoursInput(getHoursWorked(shift).toFixed(2));
                         }
                       }}
                       className={`relative flex aspect-[4/3] min-w-0 flex-col items-start justify-start gap-0.5 rounded-md px-2 py-1.5 text-left transition-all ${
@@ -447,9 +443,7 @@ export default function StaffHoursPage() {
                           {notClockedIn ? (
                             <span
                               className={`truncate text-sm font-medium ${
-                                isSelected
-                                  ? "text-blue-200"
-                                  : "text-red-600"
+                                isSelected ? "text-blue-200" : "text-red-600"
                               }`}
                             >
                               Not Clocked In
@@ -457,9 +451,7 @@ export default function StaffHoursPage() {
                           ) : (
                             <span
                               className={`truncate text-sm font-medium ${
-                                isSelected
-                                  ? "text-blue-200"
-                                  : "text-zinc-600"
+                                isSelected ? "text-blue-200" : "text-zinc-600"
                               }`}
                             >
                               Clocked In: {clockInText}
