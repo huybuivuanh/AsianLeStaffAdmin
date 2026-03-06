@@ -37,7 +37,7 @@ export function TipsCalendarDayCell({
     >
       <span className="text-lg font-semibold">{date.getDate()}</span>
       <div className="flex min-w-0 max-w-full flex-col gap-0.5">
-        {hasTips ? (
+        {hasTips && (
           <>
             <span
               className={`truncate text-xs leading-tight ${
@@ -75,14 +75,6 @@ export function TipsCalendarDayCell({
               Total ${total.toFixed(2)}
             </span>
           </>
-        ) : (
-          <span
-            className={`truncate text-xs leading-tight ${
-              isSelected ? "text-blue-200" : "text-zinc-400"
-            }`}
-          >
-            No tips
-          </span>
         )}
       </div>
     </button>

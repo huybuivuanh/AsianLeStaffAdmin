@@ -150,18 +150,11 @@ export default function StaffHoursPage() {
   }
 
   const editingShift = editingShiftId
-    ? shifts.find((s) => s.id === editingShiftId) ?? null
+    ? (shifts.find((s) => s.id === editingShiftId) ?? null)
     : null;
 
   return (
     <div>
-      <div>
-        <h1 className="text-2xl font-semibold text-zinc-900">Staff Hours</h1>
-        <p className="mt-2 text-zinc-600">
-          Summary of hours and payroll export.
-        </p>
-      </div>
-
       <div className="mt-6 flex flex-wrap items-end gap-4">
         <div>
           <label className="block text-sm font-medium text-zinc-700">

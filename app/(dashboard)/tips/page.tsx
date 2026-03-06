@@ -41,14 +41,6 @@ export default function TipsPage() {
 
   return (
     <div>
-      <div>
-        <h1 className="text-2xl font-semibold text-zinc-900">Tips</h1>
-        <p className="mt-2 text-zinc-600">
-          View and manage daily tips (AM/PM, cash/card). Click a date to add or
-          edit tips.
-        </p>
-      </div>
-
       <div className="mt-6 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-md">
         <MonthCalendarNav
           viewDate={viewDate}
