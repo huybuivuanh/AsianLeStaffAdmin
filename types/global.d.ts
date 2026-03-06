@@ -29,7 +29,6 @@ declare global {
     userName: string;
     shift: TimeRange;
     break: TimeRange | null;
-    tips: number | 0;
     date: string;
     clockInTime: Date | null;
     actualHours?: number;

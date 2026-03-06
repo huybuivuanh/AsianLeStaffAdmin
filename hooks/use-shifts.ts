@@ -34,7 +34,6 @@ export function useShifts() {
               end: data.shift?.end?.toDate?.() ?? new Date(),
             },
             break: breakRange,
-            tips: (data.tips as number) ?? 0,
             date: data.date as string,
             clockInTime: data.clockInTime?.toDate?.() ?? null,
             actualHours: data.actualHours as number | undefined,
